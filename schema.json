@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "siteName": {
+      "default": "Documentation",
+      "type": "string"
+    },
+    "outputDir": {
+      "default": "./docs-build",
+      "type": "string"
+    },
+    "basePath": {
+      "default": "/",
+      "type": "string"
+    },
+    "theme": {
+      "default": "default",
+      "type": "string",
+      "enum": [
+        "default",
+        "minimal"
+      ]
+    },
+    "customCss": {
+      "type": "string"
+    },
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "meta": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "path",
+          "source"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sidebar": {
+      "default": {
+        "auto": true,
+        "collapsedDepth": 1,
+        "exclude": []
+      },
+      "type": "object",
+      "properties": {
+        "auto": {
+          "default": true,
+          "type": "boolean"
+        },
+        "collapsedDepth": {
+          "default": 1,
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "exclude": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "auto",
+        "collapsedDepth",
+        "exclude"
+      ],
+      "additionalProperties": false
+    },
+    "toc": {
+      "default": {
+        "enabled": true,
+        "minDepth": 2,
+        "maxDepth": 4
+      },
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "minDepth": {
+          "default": 2,
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "maxDepth": {
+          "default": 4,
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "enabled",
+        "minDepth",
+        "maxDepth"
+      ],
+      "additionalProperties": false
+    },
+    "markdown": {
+      "default": {
+        "gfm": true,
+        "smartypants": true,
+        "shikiTheme": "github-dark"
+      },
+      "type": "object",
+      "properties": {
+        "gfm": {
+          "default": true,
+          "type": "boolean"
+        },
+        "smartypants": {
+          "default": true,
+          "type": "boolean"
+        },
+        "shikiTheme": {
+          "default": "github-dark",
+          "type": "string"
+        }
+      },
+      "required": [
+        "gfm",
+        "smartypants",
+        "shikiTheme"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "siteName",
+    "outputDir",
+    "basePath",
+    "theme",
+    "sidebar",
+    "toc",
+    "markdown"
+  ],
+  "additionalProperties": false
+}

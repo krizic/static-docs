@@ -1,0 +1,56 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: system-ui, sans-serif;
+}
+
+.site-nav .nav-list,
+.site-nav .nav-sublist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.site-nav .nav-item {
+  display: block;
+  padding: 0.2rem 0;
+  color: var(--color-slate-700);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.site-nav .nav-item:hover {
+  text-decoration: underline;
+}
+.site-nav .nav-item-active {
+  font-weight: 700;
+}
+.site-nav .nav-group-title {
+  display: block;
+  margin-top: 0.75rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.toc-heading {
+  font-weight: 600;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+.toc .toc-list,
+.toc .toc-sublist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.toc .toc-sublist {
+  margin-left: 0.75rem;
+}
+.toc .toc-link {
+  display: block;
+  padding: 0.1rem 0;
+  font-size: 0.85rem;
+  color: var(--color-slate-600);
+  text-decoration: none;
+}
+.toc .toc-link:hover {
+  text-decoration: underline;
+}
