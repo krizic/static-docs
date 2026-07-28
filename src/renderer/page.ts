@@ -36,3 +36,52 @@ export function renderPage(ctx: PageContext): string {
     version: config.versionString,
   });
 }
+
+export interface ComponentPageContext {
+  file: FileNode;
+  navTree: NavNode[];
+  config: ResolvedConfig;
+  assetVersion?: string;
+}
+
+function esc(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Render a route that mounts a pre-built web component instead of Markdown. */
+export function renderComponentPage(ctx: ComponentPageContext): string {
+  const { file, navTree, config } = ctx;
+  const spec = file.component;
+  if (!spec) {
+    throw new Error(`renderComponentPage: ${file.routePath} has no component`);
+  }
+
+  const title = String(file.frontmatter.title ?? config.siteName);
+  // The bundle is emitted next to this page's index.html, so a relative src
+  // works under any basePath without rewriting.
+  const src =
+    "./" +
+    spec.scriptFileName +
+    (ctx.assetVersion ? `?v=${ctx.assetVersion}` : "");
+
+  return htmlShell({
+    title,
+    siteName: config.siteName,
+    description: file.frontmatter.description
+      ? String(file.frontmatter.description)
+      : undefined,
+    basePath: config.basePath,
+    contentHtml: `<div class="wb-host"><${spec.tag}></${spec.tag}></div>`,
+    sidebarHtml: renderSidebar(navTree, file.routePath, config.basePath),
+    tocHtml: "",
+    showToc: false,
+    assetVersion: ctx.assetVersion,
+    version: config.versionString,
+    fullBleed: true,
+    bodyScript: `<script type="module" src="${esc(src)}"></script>`,
+  });
+}

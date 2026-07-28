@@ -10,6 +10,8 @@ export interface LayoutData {
   assetVersion?: string;
   mermaid?: boolean;
   version?: string;
+  fullBleed?: boolean; // content fills the main column instead of a prose article
+  bodyScript?: string; // pre-rendered <script> tag appended before </body>
 }
 
 function esc(s: string): string {
@@ -48,6 +50,13 @@ export function htmlShell(d: LayoutData): string {
     ? `<span class="site-version">${esc(formatVersion(d.version))}</span>`
     : "";
 
+  const mainClass = d.fullBleed
+    ? "min-w-0 flex-1 flex flex-col"
+    : "min-w-0 flex-1 px-6 py-12 md:px-12";
+  const mainInner = d.fullBleed
+    ? d.contentHtml
+    : `<article class="prose prose-slate max-w-none">${d.contentHtml}</article>`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -71,12 +80,11 @@ ${meta}
   <aside class="hidden md:block w-72 shrink-0 border-r border-slate-200 px-4 py-12">
     <div class="sticky top-20"><nav class="site-nav">${d.sidebarHtml}</nav></div>
   </aside>
-  <main class="min-w-0 flex-1 px-6 py-12 md:px-12">
-    <article class="prose prose-slate max-w-none">${d.contentHtml}</article>
-  </main>
+  <main class="${mainClass}">${mainInner}</main>
   ${tocAside}
 </div>
 ${mermaidScript}
+${d.bodyScript ?? ""}
 </body>
 </html>`;
 }
