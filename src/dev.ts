@@ -82,6 +82,9 @@ export async function dev(
 
   const watchTargets = ["**/*.md", path.basename(configPath)];
   if (config.customCss) watchTargets.push(config.customCss);
+  for (const r of config.componentRoutes ?? []) {
+    watchTargets.push(r.script);
+  }
   const watcher = chokidar.watch(watchTargets, {
     cwd: config.rootDir,
     ignoreInitial: true,
