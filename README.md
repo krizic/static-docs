@@ -21,6 +21,7 @@ folder of HTML, CSS, and assets ready to deploy anywhere.
 - **GitHub-flavored Markdown** — tables, task lists, strikethrough, autolinks.
 - **Build-time syntax highlighting** — via Shiki, no client runtime.
 - **Tailwind v4 themes** — compiled against your generated HTML.
+- **Web-component routes** — mount a pre-built custom element on its own page.
 
 ## Install
 
