@@ -8,6 +8,31 @@ export const RouteSchema = z.object({
   meta: z.record(z.string(), z.unknown()).optional(),
 });
 
+/**
+ * A custom element tag must contain a hyphen, start with an ASCII letter, and
+ * contain no whitespace or HTML-significant characters. The hyphen rule is the
+ * HTML spec requirement; the character restrictions also stop a config value
+ * from breaking out of the tag it is interpolated into.
+ */
+export function isValidCustomElementTag(tag: string): boolean {
+  return /^[a-z][a-z0-9]*(-[a-z0-9]+)+$/.test(tag);
+}
+
+export const ComponentRouteSchema = z.object({
+  path: z.string(),
+  tag: z.string().refine(isValidCustomElementTag, {
+    message:
+      'must be a valid custom element name: lowercase, containing a hyphen (e.g. "my-workbench")',
+  }),
+  script: z.string(),
+  title: z.string().optional(),
+  navCategory: z.string().optional(),
+  navOrder: z.number().optional(),
+  hidden: z.boolean().default(false),
+});
+
+export type ComponentRoute = z.infer<typeof ComponentRouteSchema>;
+
 export const VersionSchema = z.union([
   z.string(),
   z.object({
@@ -26,6 +51,7 @@ export const ConfigSchema = z.object({
   theme: z.enum(["default", "minimal"]).default("default"),
   customCss: z.string().optional(),
   routes: z.array(RouteSchema).optional(),
+  componentRoutes: z.array(ComponentRouteSchema).optional(),
   sidebar: z
     .object({
       auto: z.boolean().default(true),

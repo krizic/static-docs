@@ -85,6 +85,43 @@
         "additionalProperties": false
       }
     },
+    "componentRoutes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "script": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "navCategory": {
+            "type": "string"
+          },
+          "navOrder": {
+            "type": "number"
+          },
+          "hidden": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path",
+          "tag",
+          "script",
+          "hidden"
+        ],
+        "additionalProperties": false
+      }
+    },
     "sidebar": {
       "default": {
         "auto": true,
