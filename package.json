@@ -42,7 +42,8 @@
     "dist",
     "src/themes",
     "schema.json",
-    "assets"
+    "assets",
+    "LLM.md"
   ],
   "publishConfig": {
     "access": "public"
@@ -53,7 +54,8 @@
     "typecheck": "tsc --noEmit",
     "schema": "node dist/cli.js schema",
     "docs": "node dist/cli.js build",
-    "prepublishOnly": "pnpm run build"
+    "llm": "repo-context --out LLM.md",
+    "prepublishOnly": "pnpm run build && pnpm run llm"
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.3.3",
@@ -80,6 +82,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@krizic/repo-context": "^0.1.1",
     "@types/hast": "^3.0.4",
     "@types/node": "^22.0.0",
     "tsup": "^8.5.1",

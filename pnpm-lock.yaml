@@ -75,6 +75,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@krizic/repo-context':
+        specifier: ^0.1.1
+        version: 0.1.1
       '@types/hast':
         specifier: ^3.0.4
         version: 3.0.5
@@ -276,6 +279,11 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@krizic/repo-context@0.1.1':
+    resolution: {integrity: sha512-oFt0aOLAyN0OO4r94zviU8d6a5Z2F4A2hQiGHudQ+5IsbOZcGbpjCRvGPFeSYwOC3eo/1w281ES5MBspYV3vhw==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@mermaid-js/parser@1.2.0':
     resolution: {integrity: sha512-oYPyv8A4As1yH5Bx+04iQEQxXuIQDe0GKCNSRgao6z8AM9jixXIfP0vsppRLvGf+nKIOb9/LdpWA4YuJiVvESA==}
@@ -2055,6 +2063,8 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@krizic/repo-context@0.1.1': {}
 
   '@mermaid-js/parser@1.2.0':
     dependencies:

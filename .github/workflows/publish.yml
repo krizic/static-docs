@@ -36,6 +36,9 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Generate LLM.md
+        run: pnpm run llm
+
       - name: Check if version changed
         id: version-check
         run: |
