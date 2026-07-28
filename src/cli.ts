@@ -45,5 +45,5 @@ cli
   });
 
 cli.help();
-cli.version("0.1.0");
+cli.version(__PKG_VERSION__);
 cli.parse();
