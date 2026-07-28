@@ -4,9 +4,13 @@ import { loadConfig, type ResolvedConfig } from "./config.js";
 import { resolveRoutes } from "./router.js";
 import { buildNavTree } from "./nav.js";
 import { parseMarkdown } from "./parser/index.js";
-import { renderPage } from "./renderer/page.js";
+import { renderPage, renderComponentPage } from "./renderer/page.js";
 import { compileTheme } from "./theme.js";
-import { copyAssets, copyMermaidRuntime } from "./assets.js";
+import {
+  copyAssets,
+  copyMermaidRuntime,
+  copyComponentScripts,
+} from "./assets.js";
 import { outputFile } from "./utils/fs.js";
 import { outFileFor } from "./utils/path.js";
 import type { FileNode, ParsedMarkdown } from "./types.js";
@@ -31,21 +35,29 @@ export async function build(
   const assetVersion = Date.now().toString(36);
   const rendered: { file: FileNode; parsed: ParsedMarkdown }[] = [];
   for (const file of files) {
+    const outPath = path.join(config.outputDirAbs, outFileFor(file.routePath));
+    if (file.component) {
+      await outputFile(
+        outPath,
+        renderComponentPage({ file, navTree, config, assetVersion }),
+      );
+      continue;
+    }
     const parsed = await parseMarkdown(file, config);
     const html = renderPage({ file, parsed, navTree, config, assetVersion });
-    const outPath = path.join(config.outputDirAbs, outFileFor(file.routePath));
     await outputFile(outPath, html);
     rendered.push({ file, parsed });
   }
 
   await copyAssets(rendered, config);
+  await copyComponentScripts(files, config);
   if (rendered.some((r) => r.parsed.hasMermaid)) {
     await copyMermaidRuntime(config);
   }
   await compileTheme(config);
 
   console.log(
-    `[static-docs] built ${rendered.length} page(s) → ${config.outputDir}`,
+    `[static-docs] built ${files.length} page(s) → ${config.outputDir}`,
   );
-  return { config, pages: rendered.length };
+  return { config, pages: files.length };
 }

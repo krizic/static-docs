@@ -43,3 +43,20 @@ export async function copyMermaidRuntime(
   const dest = path.join(config.outputDirAbs, "assets", "mermaid.min.js");
   await copyFileEnsured(src, dest);
 }
+
+/** Copy each component route's bundle next to that route's index.html. */
+export async function copyComponentScripts(
+  files: FileNode[],
+  config: ResolvedConfig,
+): Promise<void> {
+  for (const file of files) {
+    if (!file.component) continue;
+    const outDir = path.dirname(
+      path.join(config.outputDirAbs, outFileFor(file.routePath)),
+    );
+    await copyFileEnsured(
+      file.component.scriptSourceAbs,
+      path.join(outDir, file.component.scriptFileName),
+    );
+  }
+}
