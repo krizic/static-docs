@@ -1,7 +1,7 @@
 {
-  "name": "@org/static-docs",
+  "name": "@krizic/static-docs",
   "version": "0.1.0",
-  "description": "Turn Markdown into a zero-JS static documentation site.",
+  "description": "Turn Markdown into a static documentation site.",
   "type": "module",
   "license": "MIT",
   "engines": {

@@ -17,6 +17,37 @@
       "default": "/",
       "type": "string"
     },
+    "version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string"
+            },
+            "field": {
+              "default": "version",
+              "type": "string"
+            }
+          },
+          "required": [
+            "file",
+            "field"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "exclude": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "theme": {
       "default": "default",
       "type": "string",
@@ -152,6 +183,7 @@
     "siteName",
     "outputDir",
     "basePath",
+    "exclude",
     "theme",
     "sidebar",
     "toc",

@@ -102,10 +102,70 @@
   color: var(--color-slate-400);
 }
 
+/* Documentation version badge in the header */
+.site-version {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--color-slate-100);
+  color: var(--color-slate-600);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 /* Headings link to themselves via rehype-autolink-headings (behavior: wrap) */
 .prose :where(h1, h2, h3, h4, h5, h6) a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Inline code: drop the typographic backticks, render as a subtle chip */
+.prose :not(pre) > code::before,
+.prose :not(pre) > code::after {
+  content: "";
+}
+.prose :not(pre) > code {
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: 0.12em 0.35em;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  font-size: 0.85em;
+}
+
+/* Tables: bordered, filled header, zebra rows */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #e2e8f0;
+  font-size: 0.875em;
+  margin: 1.5rem 0;
+}
+.prose thead {
+  background: #f1f5f9;
+}
+.prose thead th {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #0f172a;
+  border-bottom: 1px solid #cbd5e1;
+}
+.prose tbody td {
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  border-top: 1px solid #e2e8f0;
+  border-left: 1px solid #e2e8f0;
+}
+.prose tbody td:first-child {
+  border-left: none;
+}
+.prose thead th + th {
+  border-left: 1px solid #cbd5e1;
+}
+.prose tbody tr:nth-child(even) {
+  background: #f8fafc;
 }
 
 /* Mermaid diagrams (client-rendered SVG) */

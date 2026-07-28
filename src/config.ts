@@ -8,11 +8,21 @@ export const RouteSchema = z.object({
   meta: z.record(z.string(), z.unknown()).optional(),
 });
 
+export const VersionSchema = z.union([
+  z.string(),
+  z.object({
+    file: z.string(),
+    field: z.string().default("version"),
+  }),
+]);
+
 export const ConfigSchema = z.object({
   $schema: z.string().optional(),
   siteName: z.string().default("Documentation"),
   outputDir: z.string().default("./docs-build"),
   basePath: z.string().default("/"),
+  version: VersionSchema.optional(),
+  exclude: z.array(z.string()).default([]),
   theme: z.enum(["default", "minimal"]).default("default"),
   customCss: z.string().optional(),
   routes: z.array(RouteSchema).optional(),
@@ -44,6 +54,7 @@ export type Config = z.infer<typeof ConfigSchema>;
 export interface ResolvedConfig extends Config {
   rootDir: string; // dir containing the config file
   outputDirAbs: string; // absolute output dir
+  versionString?: string; // resolved documentation version, if any
 }
 
 export async function loadConfig(configPath: string): Promise<ResolvedConfig> {
@@ -70,7 +81,32 @@ export async function loadConfig(configPath: string): Promise<ResolvedConfig> {
     ...cfg,
     rootDir,
     outputDirAbs: path.resolve(rootDir, cfg.outputDir),
+    versionString: await resolveVersion(cfg.version, rootDir),
   };
+}
+
+async function resolveVersion(
+  version: Config["version"],
+  rootDir: string,
+): Promise<string | undefined> {
+  if (version === undefined) return undefined;
+  if (typeof version === "string") {
+    const v = version.trim();
+    return v || undefined;
+  }
+  const fileAbs = path.resolve(rootDir, version.file);
+  try {
+    const data = JSON.parse(await readFile(fileAbs, "utf8"));
+    const value = data?.[version.field];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    console.warn(
+      `[static-docs] version: field "${version.field}" not found or not a string in ${version.file}`,
+    );
+    return undefined;
+  } catch {
+    console.warn(`[static-docs] version: could not read ${version.file}`);
+    return undefined;
+  }
 }
 
 export function toJsonSchema(): unknown {

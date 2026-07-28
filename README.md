@@ -1,12 +1,12 @@
 ---
 title: Home
-description: Turn Markdown into a zero-JS static documentation site.
+description: Turn Markdown into a static documentation site.
 navOrder: 0
 ---
 
 # StaticDocs
 
-**StaticDocs** (`@org/static-docs`) turns a repository's Markdown files into a
+**StaticDocs** (`@krizic/static-docs`) turns a repository's Markdown files into a
 multi-page, deeply-linked, static documentation site with zero runtime
 JavaScript. Drop a JSON config in your repo root, run one command, and get a
 folder of HTML, CSS, and assets ready to deploy anywhere.
@@ -25,7 +25,7 @@ folder of HTML, CSS, and assets ready to deploy anywhere.
 ## Install
 
 ```bash
-npm install --save-dev @org/static-docs
+npm install --save-dev @krizic/static-docs
 ```
 
 ## Usage

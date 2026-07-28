@@ -6,7 +6,8 @@
 }
 
 .site-nav .nav-list,
-.site-nav .nav-sublist {
+.site-nav .nav-sublist,
+.site-nav .nav-branch {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -24,11 +25,32 @@
 .site-nav .nav-item-active {
   font-weight: 700;
 }
-.site-nav .nav-group-title {
+.site-nav .nav-section-title {
   display: block;
   margin-top: 0.75rem;
   font-weight: 600;
   font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-slate-500);
+}
+.site-nav .nav-section:first-child .nav-section-title {
+  margin-top: 0;
+}
+.site-nav .nav-parent {
+  font-weight: 600;
+}
+.site-nav .nav-parent-label {
+  display: block;
+  padding: 0.2rem 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-slate-500);
+}
+.site-nav .nav-branch {
+  margin-left: 0.5rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid var(--color-slate-200);
 }
 .toc-heading {
   font-weight: 600;
@@ -53,6 +75,52 @@
 }
 .toc .toc-link:hover {
   text-decoration: underline;
+}
+
+/* Documentation version badge in the header */
+.site-version {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-slate-500);
+}
+
+/* Inline code: drop the typographic backticks */
+.prose :not(pre) > code::before,
+.prose :not(pre) > code::after {
+  content: "";
+}
+.prose :not(pre) > code {
+  background: #f3f4f6;
+  padding: 0.1em 0.3em;
+  border-radius: 0.2rem;
+  font-weight: 500;
+  font-size: 0.85em;
+}
+
+/* Tables: bordered with a filled header */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d1d5db;
+  font-size: 0.9em;
+  margin: 1.25rem 0;
+}
+.prose thead {
+  background: #f3f4f6;
+}
+.prose thead th {
+  padding: 0.45rem 0.7rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid #9ca3af;
+}
+.prose tbody td {
+  padding: 0.45rem 0.7rem;
+  vertical-align: top;
+  border-top: 1px solid #e5e7eb;
+}
+.prose tbody tr:nth-child(even) {
+  background: #f9fafb;
 }
 
 /* Mermaid diagrams (client-rendered SVG) */

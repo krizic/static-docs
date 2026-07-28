@@ -9,6 +9,7 @@ export interface LayoutData {
   showToc: boolean;
   assetVersion?: string;
   mermaid?: boolean;
+  version?: string;
 }
 
 function esc(s: string): string {
@@ -17,6 +18,11 @@ function esc(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+/** Prefix a "v" only when the value starts with a bare digit (e.g. 1.2.3). */
+function formatVersion(v: string): string {
+  return /^\d/.test(v) ? `v${v}` : v;
 }
 
 export function htmlShell(d: LayoutData): string {
@@ -38,6 +44,10 @@ export function htmlShell(d: LayoutData): string {
 <script>mermaid.initialize({ startOnLoad: true, theme: "default" });</script>`
     : "";
 
+  const versionBadge = d.version
+    ? `<span class="site-version">${esc(formatVersion(d.version))}</span>`
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,7 +65,7 @@ ${meta}
       <nav class="site-nav">${d.sidebarHtml}</nav>
     </div>
   </details>
-  <a href="${base}" class="text-lg font-semibold tracking-tight">${esc(d.siteName)}</a>
+  <a href="${base}" class="text-lg font-semibold tracking-tight">${esc(d.siteName)}</a>${versionBadge}
 </header>
 <div class="mx-auto flex w-full max-w-screen-2xl">
   <aside class="hidden md:block w-72 shrink-0 border-r border-slate-200 px-4 py-12">

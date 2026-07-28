@@ -13,7 +13,11 @@ const DEFAULT_IGNORE = [
 ];
 
 export async function scanRepo(config: ResolvedConfig): Promise<FileNode[]> {
-  const ignore = [...DEFAULT_IGNORE, ...config.sidebar.exclude];
+  const ignore = [
+    ...DEFAULT_IGNORE,
+    ...config.exclude,
+    ...config.sidebar.exclude,
+  ];
   const entries = await fg("**/*.md", {
     cwd: config.rootDir,
     ignore,

@@ -33,5 +33,6 @@ export function renderPage(ctx: PageContext): string {
     showToc,
     assetVersion: ctx.assetVersion,
     mermaid: parsed.hasMermaid,
+    version: config.versionString,
   });
 }
