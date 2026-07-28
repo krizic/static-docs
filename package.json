@@ -4,11 +4,30 @@
   "description": "Turn Markdown into a static documentation site.",
   "type": "module",
   "license": "MIT",
+  "author": "Vedran Krizic",
+  "homepage": "https://github.com/krizic/static-docs#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krizic/static-docs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/krizic/static-docs/issues"
+  },
+  "keywords": [
+    "markdown",
+    "documentation",
+    "static-site",
+    "docs",
+    "ssg",
+    "mermaid",
+    "cli"
+  ],
   "engines": {
     "node": ">=18"
   },
+  "packageManager": "pnpm@11.15.1",
   "bin": {
-    "static-docs": "bin/static-docs.js"
+    "static-docs": "./dist/cli.js"
   },
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -21,17 +40,20 @@
   },
   "files": [
     "dist",
-    "bin",
     "src/themes",
     "schema.json",
     "assets"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup && tsc --emitDeclarationOnly --declaration",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "schema": "node dist/cli.js schema",
-    "docs": "node dist/cli.js build"
+    "docs": "node dist/cli.js build",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.3.3",

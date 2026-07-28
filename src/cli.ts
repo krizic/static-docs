@@ -1,8 +1,9 @@
+#!/usr/bin/env node
 import { cac } from "cac";
 import { writeFile } from "node:fs/promises";
 import { build } from "./builder.js";
-import { dev } from "./dev.js";
 import { toJsonSchema } from "./config.js";
+import { dev } from "./dev.js";
 
 const cli = cac("static-docs");
 
