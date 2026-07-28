@@ -6,9 +6,15 @@ on:
       - master
 
 permissions:
-  contents: read
+  contents: write # required to push the release commit and tag
   id-token: write # required for npm provenance
   packages: write # required to publish to GitHub Packages
+
+# Serialise releases: two concurrent runs would resolve the same next version
+# and the second publish would fail on an already-taken version.
+concurrency:
+  group: publish-master
+  cancel-in-progress: false
 
 jobs:
   publish:
@@ -16,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the release commit can be pushed
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -33,31 +41,35 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+      # The npm registry is the source of truth for what has shipped, so the
+      # next version is derived from it rather than from package.json. A
+      # manually raised local version (a minor or major release) still wins.
+      - name: Resolve next version
+        id: version
+        run: |
+          LOCAL_VERSION=$(node -p "require('./package.json').version")
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          PUBLISHED_VERSION=$(npm view "$PACKAGE_NAME" version 2>/dev/null || echo "none")
+          NEXT_VERSION=$(node scripts/next-version.mjs "$PUBLISHED_VERSION" "$LOCAL_VERSION")
+
+          echo "Local version:     $LOCAL_VERSION"
+          echo "Published version: $PUBLISHED_VERSION"
+          echo "Next version:      $NEXT_VERSION"
+
+          echo "next=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+
+      # Written before the build so tsup inlines the released version into the
+      # bundle via __PKG_VERSION__.
+      - name: Apply next version
+        run: npm version "${{ steps.version.outputs.next }}" --no-git-tag-version --allow-same-version
+
       - name: Build
         run: pnpm run build
 
       - name: Generate LLM.md
         run: pnpm run llm
 
-      - name: Check if version changed
-        id: version-check
-        run: |
-          LOCAL_VERSION=$(node -p "require('./package.json').version")
-          PACKAGE_NAME=$(node -p "require('./package.json').name")
-          PUBLISHED_VERSION=$(npm view "$PACKAGE_NAME" version 2>/dev/null || echo "none")
-
-          echo "Local version:     $LOCAL_VERSION"
-          echo "Published version: $PUBLISHED_VERSION"
-
-          if [ "$LOCAL_VERSION" = "$PUBLISHED_VERSION" ]; then
-            echo "Version unchanged, skipping publish."
-            echo "should_publish=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_publish=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Publish to npm
-        if: steps.version-check.outputs.should_publish == 'true'
         run: pnpm publish --provenance --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -66,7 +78,6 @@ jobs:
       # the repo's "Packages" sidebar on GitHub, linked via the `repository`
       # field in package.json. Uses the built-in GITHUB_TOKEN, no extra secret needed.
       - name: Setup Node.js for GitHub Packages
-        if: steps.version-check.outputs.should_publish == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
@@ -74,7 +85,18 @@ jobs:
           scope: '@krizic'
 
       - name: Publish to GitHub Packages
-        if: steps.version-check.outputs.should_publish == 'true'
         run: pnpm publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Last, so a failed publish never leaves master advertising a version
+      # that was never released. If this step fails, the next run simply
+      # resolves the same next version again from the registry.
+      - name: Commit and tag release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json LLM.md
+          git commit -m "chore(release): v${{ steps.version.outputs.next }} [skip ci]"
+          git tag "v${{ steps.version.outputs.next }}"
+          git push origin HEAD:master --follow-tags
