@@ -4,6 +4,7 @@ import matter from "gray-matter";
 import type { ResolvedConfig } from "./config.js";
 import type { FileNode, Frontmatter } from "./types.js";
 import { toRoutePath } from "./utils/path.js";
+import { exists } from "./utils/fs.js";
 import { scanRepo } from "./scanner.js";
 
 /** Build FileNodes from config routes and componentRoutes, else scan the repo. */
@@ -21,7 +22,7 @@ export async function resolveRoutes(
   for (const node of markdownNodes) {
     if (claim(seen, node.routePath)) nodes.push(node);
   }
-  for (const node of componentRouteNodes(config)) {
+  for (const node of await componentRouteNodes(config)) {
     if (claim(seen, node.routePath)) nodes.push(node);
   }
   return nodes;
@@ -57,11 +58,19 @@ async function markdownRouteNodes(
   return nodes;
 }
 
-function componentRouteNodes(config: ResolvedConfig): FileNode[] {
-  return (config.componentRoutes ?? []).map((r) => {
+async function componentRouteNodes(
+  config: ResolvedConfig,
+): Promise<FileNode[]> {
+  const nodes: FileNode[] = [];
+  for (const r of config.componentRoutes ?? []) {
     const routePath = normalizeRoute(r.path);
     const scriptSourceAbs = path.resolve(config.rootDir, r.script);
-    return {
+    if (!(await exists(scriptSourceAbs))) {
+      throw new Error(
+        `Component route "${routePath}": script not found: ${scriptSourceAbs}`,
+      );
+    }
+    nodes.push({
       sourcePath: "",
       relativePath: path
         .relative(config.rootDir, scriptSourceAbs)
@@ -79,8 +88,9 @@ function componentRouteNodes(config: ResolvedConfig): FileNode[] {
         scriptSourceAbs,
         scriptFileName: path.basename(scriptSourceAbs),
       },
-    };
-  });
+    });
+  }
+  return nodes;
 }
 
 function defaultTitle(routePath: string): string {
