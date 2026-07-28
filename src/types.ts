@@ -36,4 +36,5 @@ export interface ParsedMarkdown {
   toc: TocEntry[];
   frontmatter: Frontmatter;
   assets: string[]; // relative asset paths referenced in the md
+  hasMermaid: boolean; // true if the page contains a mermaid diagram
 }

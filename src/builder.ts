@@ -6,7 +6,7 @@ import { buildNavTree } from "./nav.js";
 import { parseMarkdown } from "./parser/index.js";
 import { renderPage } from "./renderer/page.js";
 import { compileTheme } from "./theme.js";
-import { copyAssets } from "./assets.js";
+import { copyAssets, copyMermaidRuntime } from "./assets.js";
 import { outputFile } from "./utils/fs.js";
 import { outFileFor } from "./utils/path.js";
 import type { FileNode, ParsedMarkdown } from "./types.js";
@@ -28,16 +28,20 @@ export async function build(
 
   await rm(config.outputDirAbs, { recursive: true, force: true });
 
+  const assetVersion = Date.now().toString(36);
   const rendered: { file: FileNode; parsed: ParsedMarkdown }[] = [];
   for (const file of files) {
     const parsed = await parseMarkdown(file, config);
-    const html = renderPage({ file, parsed, navTree, config });
+    const html = renderPage({ file, parsed, navTree, config, assetVersion });
     const outPath = path.join(config.outputDirAbs, outFileFor(file.routePath));
     await outputFile(outPath, html);
     rendered.push({ file, parsed });
   }
 
   await copyAssets(rendered, config);
+  if (rendered.some((r) => r.parsed.hasMermaid)) {
+    await copyMermaidRuntime(config);
+  }
   await compileTheme(config);
 
   console.log(

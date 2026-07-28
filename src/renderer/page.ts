@@ -9,6 +9,7 @@ export interface PageContext {
   parsed: ParsedMarkdown;
   navTree: NavNode[];
   config: ResolvedConfig;
+  assetVersion?: string;
 }
 
 export function renderPage(ctx: PageContext): string {
@@ -30,5 +31,7 @@ export function renderPage(ctx: PageContext): string {
     sidebarHtml: renderSidebar(navTree, file.routePath, config.basePath),
     tocHtml: renderToc(parsed.toc),
     showToc,
+    assetVersion: ctx.assetVersion,
+    mermaid: parsed.hasMermaid,
   });
 }

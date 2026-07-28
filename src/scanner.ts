@@ -6,7 +6,11 @@ import type { ResolvedConfig } from "./config.js";
 import type { FileNode, Frontmatter } from "./types.js";
 import { toRoutePath } from "./utils/path.js";
 
-const DEFAULT_IGNORE = ["node_modules/**", ".git/**", "**/docs-build/**"];
+const DEFAULT_IGNORE = [
+  "**/node_modules/**",
+  "**/.git/**",
+  "**/docs-build/**",
+];
 
 export async function scanRepo(config: ResolvedConfig): Promise<FileNode[]> {
   const ignore = [...DEFAULT_IGNORE, ...config.sidebar.exclude];

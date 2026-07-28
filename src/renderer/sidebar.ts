@@ -16,22 +16,49 @@ export function renderSidebar(
   basePath: string,
 ): string {
   return `<ul class="nav-list">${nav
-    .map((n) => renderNode(n, currentRoute, basePath))
+    .map((n) => renderNode(n, currentRoute, basePath, 0))
     .join("")}</ul>`;
 }
 
-function renderNode(node: NavNode, current: string, basePath: string): string {
-  if (node.routePath) {
-    const active = node.routePath === current;
-    return `<li><a class="nav-item${active ? " nav-item-active" : ""}" href="${href(
-      node.routePath,
-      basePath,
-    )}">${esc(node.title)}</a></li>`;
-  }
-  const children = node.children
-    .map((c) => renderNode(c, current, basePath))
+function leaf(node: NavNode, current: string, basePath: string): string {
+  const active = node.routePath === current ? " nav-item-active" : "";
+  return `<li><a class="nav-item${active}" href="${href(
+    node.routePath!,
+    basePath,
+  )}">${esc(node.title)}</a></li>`;
+}
+
+function renderNode(
+  node: NavNode,
+  current: string,
+  basePath: string,
+  depth: number,
+): string {
+  const isGroup = node.children.length > 0;
+  if (!isGroup) return leaf(node, current, basePath);
+
+  const childHtml = node.children
+    .map((c) => renderNode(c, current, basePath, depth + 1))
     .join("");
-  return `<li class="nav-group"><span class="nav-group-title">${esc(
-    node.title,
-  )}</span><ul class="nav-sublist">${children}</ul></li>`;
+  const active = node.routePath === current ? " nav-item-active" : "";
+
+  // Top-level sections keep the small-caps header.
+  if (depth === 0) {
+    const header = node.routePath
+      ? `<a class="nav-section-title nav-section-link${active}" href="${href(
+          node.routePath,
+          basePath,
+        )}">${esc(node.title)}</a>`
+      : `<span class="nav-section-title">${esc(node.title)}</span>`;
+    return `<li class="nav-section">${header}<ul class="nav-sublist">${childHtml}</ul></li>`;
+  }
+
+  // Nested folders render as an emphasized parent with a guided branch.
+  const header = node.routePath
+    ? `<a class="nav-item nav-parent${active}" href="${href(
+        node.routePath,
+        basePath,
+      )}">${esc(node.title)}</a>`
+    : `<span class="nav-parent-label">${esc(node.title)}</span>`;
+  return `<li class="nav-tree">${header}<ul class="nav-branch">${childHtml}</ul></li>`;
 }

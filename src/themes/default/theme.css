@@ -8,25 +8,30 @@
 }
 
 /* Site navigation */
-.site-nav .nav-list {
+.site-nav .nav-list,
+.site-nav .nav-sublist,
+.site-nav .nav-branch {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.site-nav .nav-sublist {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.site-nav .nav-group-title {
+/* Top-level section headers (small-caps) */
+.site-nav .nav-section-title {
   display: block;
-  margin: 1rem 0 0.25rem;
+  margin: 1.25rem 0 0.25rem;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-slate-500);
 }
+.site-nav .nav-section:first-child .nav-section-title {
+  margin-top: 0;
+}
+.site-nav a.nav-section-link:hover {
+  color: var(--color-slate-900);
+}
+/* Leaf and parent items */
 .site-nav .nav-item {
   display: block;
   padding: 0.25rem 0.5rem;
@@ -43,6 +48,23 @@
   background: var(--color-brand-500);
   color: #fff;
   font-weight: 600;
+}
+/* Nested folder: emphasized parent + guided branch */
+.site-nav .nav-parent {
+  font-weight: 600;
+  color: var(--color-slate-700);
+}
+.site-nav .nav-parent-label {
+  display: block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-slate-500);
+}
+.site-nav .nav-branch {
+  margin-left: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--color-slate-200);
 }
 
 /* Right TOC panel */
@@ -84,4 +106,22 @@
 .prose :where(h1, h2, h3, h4, h5, h6) a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Mermaid diagrams (client-rendered SVG) */
+.prose pre.mermaid {
+  background: none;
+  color: inherit;
+  padding: 0;
+  margin: 1.5rem 0;
+  text-align: center;
+  overflow-x: auto;
+}
+.prose pre.mermaid:not([data-processed]) {
+  visibility: hidden;
+}
+.prose pre.mermaid svg {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
 }

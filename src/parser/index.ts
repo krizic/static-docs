@@ -17,6 +17,7 @@ import type { FileNode, ParsedMarkdown, TocEntry } from "../types.js";
 import { extractMeta } from "./meta.js";
 import { rehypeRewriteLinks } from "./links.js";
 import { rehypeCollectToc, nestToc } from "./toc.js";
+import { rehypeMermaid, type MermaidState } from "./mermaid.js";
 
 /** No-op unified plugin used to conditionally skip remark plugins. */
 function noop() {
@@ -32,6 +33,7 @@ export async function parseMarkdown(
 
   const tocFlat: TocEntry[] = [];
   const assets: string[] = [];
+  const mermaidState: MermaidState = { found: false };
   const currentRelDir = path.posix.dirname(file.relativePath);
 
   const gfm = config.markdown.gfm ? remarkGfm : noop;
@@ -45,6 +47,7 @@ export async function parseMarkdown(
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeSlug)
     .use(rehypeAutolinkHeadings, { behavior: "wrap" })
+    .use(rehypeMermaid, mermaidState)
     .use(rehypePrettyCode, {
       theme: config.markdown.shikiTheme as PrettyCodeOptions["theme"],
       keepBackground: true,
@@ -67,5 +70,6 @@ export async function parseMarkdown(
     toc: nestToc(tocFlat),
     frontmatter,
     assets,
+    hasMermaid: mermaidState.found,
   };
 }

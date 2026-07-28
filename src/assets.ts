@@ -1,8 +1,11 @@
 import path from "node:path";
+import { createRequire } from "node:module";
 import type { ResolvedConfig } from "./config.js";
 import type { FileNode, ParsedMarkdown } from "./types.js";
 import { copyFileEnsured, exists } from "./utils/fs.js";
 import { outFileFor } from "./utils/path.js";
+
+const require = createRequire(import.meta.url);
 
 /** Copy assets referenced by each page next to its emitted index.html. */
 export async function copyAssets(
@@ -27,4 +30,16 @@ export async function copyAssets(
       await copyFileEnsured(srcAbs, destAbs);
     }
   }
+}
+
+/**
+ * Copy the self-contained mermaid runtime bundle into `<output>/assets/`.
+ * Called once per build when at least one page contains a mermaid diagram.
+ */
+export async function copyMermaidRuntime(
+  config: ResolvedConfig,
+): Promise<void> {
+  const src = require.resolve("mermaid/dist/mermaid.min.js");
+  const dest = path.join(config.outputDirAbs, "assets", "mermaid.min.js");
+  await copyFileEnsured(src, dest);
 }

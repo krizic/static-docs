@@ -54,3 +54,21 @@
 .toc .toc-link:hover {
   text-decoration: underline;
 }
+
+/* Mermaid diagrams (client-rendered SVG) */
+.prose pre.mermaid {
+  background: none;
+  color: inherit;
+  padding: 0;
+  margin: 1.5rem 0;
+  text-align: center;
+  overflow-x: auto;
+}
+.prose pre.mermaid:not([data-processed]) {
+  visibility: hidden;
+}
+.prose pre.mermaid svg {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+}
