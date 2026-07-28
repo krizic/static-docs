@@ -6,31 +6,86 @@ import type { FileNode, Frontmatter } from "./types.js";
 import { toRoutePath } from "./utils/path.js";
 import { scanRepo } from "./scanner.js";
 
-/** Build FileNodes from explicit config.routes, filling gaps with a scan. */
+/** Build FileNodes from config routes and componentRoutes, else scan the repo. */
 export async function resolveRoutes(
   config: ResolvedConfig,
 ): Promise<FileNode[]> {
-  if (!config.routes || config.routes.length === 0) {
-    return scanRepo(config);
-  }
   const nodes: FileNode[] = [];
   const seen = new Set<string>();
-  for (const r of config.routes) {
+
+  const markdownNodes =
+    config.routes && config.routes.length > 0
+      ? await markdownRouteNodes(config)
+      : await scanRepo(config);
+
+  for (const node of markdownNodes) {
+    if (claim(seen, node.routePath)) nodes.push(node);
+  }
+  for (const node of componentRouteNodes(config)) {
+    if (claim(seen, node.routePath)) nodes.push(node);
+  }
+  return nodes;
+}
+
+function claim(seen: Set<string>, routePath: string): boolean {
+  if (seen.has(routePath)) {
+    console.warn(`[static-docs] duplicate route "${routePath}" ignored`);
+    return false;
+  }
+  seen.add(routePath);
+  return true;
+}
+
+async function markdownRouteNodes(
+  config: ResolvedConfig,
+): Promise<FileNode[]> {
+  const nodes: FileNode[] = [];
+  for (const r of config.routes ?? []) {
     const sourcePath = path.resolve(config.rootDir, r.source);
     const relativePath = path
       .relative(config.rootDir, sourcePath)
       .replace(/\\/g, "/");
-    const routePath = normalizeRoute(r.path);
     const fileFm = await readFrontmatter(sourcePath);
     const frontmatter: Frontmatter = { ...fileFm, ...(r.meta as Frontmatter) };
-    if (seen.has(routePath)) {
-      console.warn(`[static-docs] duplicate route "${routePath}" ignored`);
-      continue;
-    }
-    seen.add(routePath);
-    nodes.push({ sourcePath, relativePath, routePath, frontmatter });
+    nodes.push({
+      sourcePath,
+      relativePath,
+      routePath: normalizeRoute(r.path),
+      frontmatter,
+    });
   }
   return nodes;
+}
+
+function componentRouteNodes(config: ResolvedConfig): FileNode[] {
+  return (config.componentRoutes ?? []).map((r) => {
+    const routePath = normalizeRoute(r.path);
+    const scriptSourceAbs = path.resolve(config.rootDir, r.script);
+    return {
+      sourcePath: "",
+      relativePath: path
+        .relative(config.rootDir, scriptSourceAbs)
+        .replace(/\\/g, "/"),
+      routePath,
+      frontmatter: {
+        title: r.title ?? defaultTitle(routePath),
+        navOrder: r.navOrder,
+        navCategory: r.navCategory,
+        hidden: r.hidden,
+        toc: false,
+      },
+      component: {
+        tag: r.tag,
+        scriptSourceAbs,
+        scriptFileName: path.basename(scriptSourceAbs),
+      },
+    };
+  });
+}
+
+function defaultTitle(routePath: string): string {
+  const last = routePath.split("/").filter(Boolean).pop() ?? "Home";
+  return last.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function normalizeRoute(p: string): string {

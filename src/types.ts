@@ -9,11 +9,18 @@ export interface Frontmatter {
   [key: string]: unknown;
 }
 
+export interface ComponentSpec {
+  tag: string; // custom element tag to render
+  scriptSourceAbs: string; // absolute path to the pre-built bundle
+  scriptFileName: string; // file name emitted next to the route's index.html
+}
+
 export interface FileNode {
-  sourcePath: string; // absolute path to .md
+  sourcePath: string; // absolute path to .md; "" for component routes
   relativePath: string; // relative to repo root, posix
   routePath: string; // e.g. "/guides/start" or "/" for home
   frontmatter: Frontmatter;
+  component?: ComponentSpec; // set for web-component routes
 }
 
 export interface TocEntry {
