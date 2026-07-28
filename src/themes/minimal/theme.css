@@ -140,3 +140,17 @@
   max-width: 100%;
   height: auto;
 }
+
+/* Host for web-component routes: fills the main content column */
+.wb-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: calc(100vh - 3.5rem); /* viewport minus the sticky header */
+  min-width: 0;
+}
+.wb-host > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
