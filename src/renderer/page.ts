@@ -1,8 +1,8 @@
 import type { ResolvedConfig } from "../config.js";
 import type { FileNode, NavNode, ParsedMarkdown } from "../types.js";
+import { htmlShell } from "./layout.js";
 import { renderSidebar } from "./sidebar.js";
 import { renderToc } from "./toc-panel.js";
-import { htmlShell } from "./layout.js";
 
 export interface PageContext {
   file: FileNode;

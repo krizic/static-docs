@@ -1,6 +1,6 @@
-import { z } from "zod";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
 
 export const RouteSchema = z.object({
   path: z.string(),

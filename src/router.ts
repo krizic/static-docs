@@ -1,11 +1,11 @@
-import path from "node:path";
-import { readFile } from "node:fs/promises";
 import matter from "gray-matter";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import type { ResolvedConfig } from "./config.js";
-import type { FileNode, Frontmatter } from "./types.js";
-import { toRoutePath } from "./utils/path.js";
-import { exists } from "./utils/fs.js";
 import { scanRepo } from "./scanner.js";
+import type { FileNode, Frontmatter } from "./types.js";
+import { exists } from "./utils/fs.js";
+import { toRoutePath } from "./utils/path.js";
 
 /** Build FileNodes from config routes and componentRoutes, else scan the repo. */
 export async function resolveRoutes(

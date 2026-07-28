@@ -1,5 +1,5 @@
-import path from "node:path";
 import { createRequire } from "node:module";
+import path from "node:path";
 import type { ResolvedConfig } from "./config.js";
 import type { FileNode, ParsedMarkdown } from "./types.js";
 import { copyFileEnsured, exists } from "./utils/fs.js";

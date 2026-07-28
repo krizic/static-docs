@@ -1,5 +1,5 @@
-import { defineConfig } from "tsup";
 import { createRequire } from "node:module";
+import { defineConfig } from "tsup";
 
 // The config is an ES module, so createRequire avoids JSON import assertions,
 // whose syntax varies across Node versions.

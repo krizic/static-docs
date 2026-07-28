@@ -1,19 +1,19 @@
-import path from "node:path";
 import { rm } from "node:fs/promises";
-import { loadConfig, type ResolvedConfig } from "./config.js";
-import { resolveRoutes } from "./router.js";
-import { buildNavTree } from "./nav.js";
-import { parseMarkdown } from "./parser/index.js";
-import { renderPage, renderComponentPage } from "./renderer/page.js";
-import { compileTheme } from "./theme.js";
+import path from "node:path";
 import {
   copyAssets,
-  copyMermaidRuntime,
   copyComponentScripts,
+  copyMermaidRuntime,
 } from "./assets.js";
+import { loadConfig, type ResolvedConfig } from "./config.js";
+import { buildNavTree } from "./nav.js";
+import { parseMarkdown } from "./parser/index.js";
+import { renderComponentPage, renderPage } from "./renderer/page.js";
+import { resolveRoutes } from "./router.js";
+import { compileTheme } from "./theme.js";
+import type { FileNode, ParsedMarkdown } from "./types.js";
 import { outputFile } from "./utils/fs.js";
 import { outFileFor } from "./utils/path.js";
-import type { FileNode, ParsedMarkdown } from "./types.js";
 
 export interface BuildResult {
   config: ResolvedConfig;

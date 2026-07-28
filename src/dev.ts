@@ -1,7 +1,7 @@
+import chokidar from "chokidar";
+import { readFile } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
-import { readFile } from "node:fs/promises";
-import chokidar from "chokidar";
 import { build } from "./builder.js";
 import { loadConfig } from "./config.js";
 import { exists } from "./utils/fs.js";
