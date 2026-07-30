@@ -51,7 +51,7 @@ export function htmlShell(d: LayoutData): string {
     : "";
 
   const mainClass = d.fullBleed
-    ? "min-w-0 flex-1 flex flex-col"
+    ? "min-w-0 flex-1 flex flex-col px-6 py-6 md:px-8"
     : "min-w-0 flex-1 px-6 py-12 md:px-12";
   const mainInner = d.fullBleed
     ? d.contentHtml
@@ -76,7 +76,7 @@ ${meta}
   </details>
   <a href="${base}" class="text-lg font-semibold tracking-tight">${esc(d.siteName)}</a>${versionBadge}
 </header>
-<div class="mx-auto flex w-full max-w-screen-2xl">
+<div class="flex w-full">
   <aside class="hidden md:block w-72 shrink-0 border-r border-slate-200 px-4 py-12">
     <div class="sticky top-20"><nav class="site-nav">${d.sidebarHtml}</nav></div>
   </aside>
