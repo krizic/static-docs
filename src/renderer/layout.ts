@@ -1,3 +1,5 @@
+import { withBase } from "../utils/path.js";
+
 export interface LayoutData {
   title: string;
   siteName: string;
@@ -30,7 +32,7 @@ function formatVersion(v: string): string {
 export function htmlShell(d: LayoutData): string {
   const base = d.basePath.endsWith("/") ? d.basePath : d.basePath + "/";
   const themeHref =
-    (base + "theme.css").replace(/\/+/g, "/") +
+    withBase("theme.css", d.basePath) +
     (d.assetVersion ? `?v=${d.assetVersion}` : "");
   const meta = d.description
     ? `<meta name="description" content="${esc(d.description)}">`
@@ -40,7 +42,7 @@ export function htmlShell(d: LayoutData): string {
       ? `<aside class="hidden lg:block w-64 shrink-0 pl-8 py-12"><div class="sticky top-20"><p class="toc-heading">On this page</p><nav class="toc">${d.tocHtml}</nav></div></aside>`
       : "";
 
-  const mermaidSrc = (base + "assets/mermaid.min.js").replace(/\/+/g, "/");
+  const mermaidSrc = withBase("assets/mermaid.min.js", d.basePath);
   const mermaidScript = d.mermaid
     ? `<script src="${mermaidSrc}${d.assetVersion ? `?v=${d.assetVersion}` : ""}"></script>
 <script>mermaid.initialize({ startOnLoad: true, theme: "default" });</script>`

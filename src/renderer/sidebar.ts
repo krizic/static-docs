@@ -1,13 +1,14 @@
 import type { NavNode } from "../types.js";
+import { withBase } from "../utils/path.js";
 
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function href(routePath: string, basePath: string): string {
-  const base = basePath.endsWith("/") ? basePath : basePath + "/";
-  const clean = routePath.replace(/^\/+/, "");
-  return (base + clean).replace(/\/+/g, "/");
+  const url = withBase(routePath, basePath);
+  // Trailing slash so relative asset URLs on the target page resolve under the route directory.
+  return url.endsWith("/") ? url : url + "/";
 }
 
 export function renderSidebar(

@@ -1,5 +1,6 @@
 import type { ResolvedConfig } from "../config.js";
 import type { FileNode, NavNode, ParsedMarkdown } from "../types.js";
+import { withBase } from "../utils/path.js";
 import { htmlShell } from "./layout.js";
 import { renderSidebar } from "./sidebar.js";
 import { renderToc } from "./toc-panel.js";
@@ -61,11 +62,9 @@ export function renderComponentPage(ctx: ComponentPageContext): string {
   }
 
   const title = String(file.frontmatter.title ?? config.siteName);
-  // The bundle is emitted next to this page's index.html, so a relative src
-  // works under any basePath without rewriting.
+  // Base-path-absolute so it resolves correctly regardless of trailing slash on the route URL.
   const src =
-    "./" +
-    spec.scriptFileName +
+    withBase(`${file.routePath}/${spec.scriptFileName}`, config.basePath) +
     (ctx.assetVersion ? `?v=${ctx.assetVersion}` : "");
 
   return htmlShell({

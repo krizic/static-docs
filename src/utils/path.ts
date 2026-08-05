@@ -47,3 +47,9 @@ export function outFileFor(routePath: string): string {
   const clean = routePath.replace(/^\/+|\/+$/g, "");
   return clean ? `${clean}/index.html` : "index.html";
 }
+
+/** Join basePath + routePath into a base-path-absolute URL, e.g. "/base/", "/guides/start" -> "/base/guides/start". */
+export function withBase(routePath: string, basePath: string): string {
+  const base = basePath.endsWith("/") ? basePath : basePath + "/";
+  return (base + routePath.replace(/^\/+/, "")).replace(/\/+/g, "/");
+}
