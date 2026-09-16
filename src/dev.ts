@@ -85,6 +85,9 @@ export async function dev(
   for (const r of config.componentRoutes ?? []) {
     watchTargets.push(r.script);
   }
+  for (const g of config.evidenceGalleries ?? []) {
+    watchTargets.push(path.join(g.source, "**/*"));
+  }
   const watcher = chokidar.watch(watchTargets, {
     cwd: config.rootDir,
     ignoreInitial: true,
