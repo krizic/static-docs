@@ -122,6 +122,42 @@
         "additionalProperties": false
       }
     },
+    "evidenceGalleries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "navCategory": {
+            "type": "string"
+          },
+          "navOrder": {
+            "type": "number"
+          },
+          "hidden": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "source",
+          "path",
+          "hidden"
+        ],
+        "additionalProperties": false
+      }
+    },
     "sidebar": {
       "default": {
         "auto": true,

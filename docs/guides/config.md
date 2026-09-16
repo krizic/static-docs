@@ -111,3 +111,62 @@ The `markdown` object toggles `gfm` and `smartypants`, and sets the Shiki
 ## See also
 
 Return to the [installation](../getting-started/install.md) guide.
+
+## Evidence galleries
+
+Render a gallery of e2e test screenshots ("evidence") from a directory that
+contains a `manifest.json` plus the referenced images:
+
+```json
+{
+  "evidenceGalleries": [
+    {
+      "source": "./e2e-screenshots",
+      "path": "/e2e-evidence",
+      "title": "E2E Test Evidence",
+      "description": "Screenshots proving documented behavior",
+      "navCategory": "Quality",
+      "navOrder": 10
+    }
+  ]
+}
+```
+
+- `source` — directory with `manifest.json` and the images (relative to the
+  config file).
+- `path` — route of the gallery page.
+- `title`, `description`, `navCategory`, `navOrder`, `hidden` — same meaning
+  as for component routes.
+
+### Manifest contract
+
+```json
+{
+  "generatedAt": "2026-09-16T13:27:10.400Z",
+  "evidence": [
+    {
+      "id": "authenticated-list",
+      "title": "Authentifizierte Dokumentliste",
+      "shows": "What the screenshot shows",
+      "proves": "What the test proves",
+      "spec": "specs/authenticated-list.spec.ts",
+      "test": "renders authenticated list",
+      "status": "passed",
+      "browsers": {
+        "chromium": { "file": "authenticated-list-chromium.png", "status": "passed" }
+      }
+    }
+  ]
+}
+```
+
+- `id` must be unique; it becomes the deep link:
+  `/e2e-evidence/#authenticated-list` opens that evidence's detail modal.
+- `status` is `"passed"` or `"failed"`, overall and per browser. Browser names
+  are free-form.
+- `spec` and `test` are optional. Unknown extra fields are allowed.
+- A missing image file produces a build warning and a placeholder, not an
+  error. An invalid or missing manifest fails the build with details.
+
+In dev mode the `source` directory is watched, so re-running your e2e suite
+reloads the gallery automatically.
