@@ -1,23 +1,15 @@
-import fg from "fast-glob";
-import path from "node:path";
 import { readFile } from "node:fs/promises";
+import path from "node:path";
+import fg from "fast-glob";
 import matter from "gray-matter";
 import type { ResolvedConfig } from "./config.js";
 import type { FileNode, Frontmatter } from "./types.js";
 import { toRoutePath } from "./utils/path.js";
 
-const DEFAULT_IGNORE = [
-  "**/node_modules/**",
-  "**/.git/**",
-  "**/docs-build/**",
-];
+const DEFAULT_IGNORE = ["**/node_modules/**", "**/.git/**", "**/docs-build/**"];
 
 export async function scanRepo(config: ResolvedConfig): Promise<FileNode[]> {
-  const ignore = [
-    ...DEFAULT_IGNORE,
-    ...config.exclude,
-    ...config.sidebar.exclude,
-  ];
+  const ignore = [...DEFAULT_IGNORE, ...config.exclude, ...config.sidebar.exclude];
   const entries = await fg("**/*.md", {
     cwd: config.rootDir,
     ignore,

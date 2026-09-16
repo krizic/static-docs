@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -26,10 +26,7 @@ describe("resolveRoutes with evidenceGalleries", () => {
   beforeEach(async () => {
     dir = await mkdtemp(path.join(tmpdir(), "router-"));
     await mkdir(path.join(dir, "shots"), { recursive: true });
-    await writeFile(
-      path.join(dir, "shots", "manifest.json"),
-      JSON.stringify(MANIFEST),
-    );
+    await writeFile(path.join(dir, "shots", "manifest.json"), JSON.stringify(MANIFEST));
   });
   afterEach(async () => {
     await rm(dir, { recursive: true, force: true });
@@ -59,10 +56,10 @@ describe("resolveRoutes with evidenceGalleries", () => {
     const nodes = await resolveRoutes(cfg);
     const node = nodes.find((n) => n.routePath === "/e2e-evidence");
     expect(node).toBeDefined();
-    expect(node!.evidence).toBeDefined();
-    expect(node!.evidence!.sourceDirAbs).toBe(path.join(dir, "shots"));
-    expect(node!.evidence!.manifest.evidence[0].id).toBe("empty-list");
-    expect(node!.frontmatter).toMatchObject({
+    expect(node?.evidence).toBeDefined();
+    expect(node?.evidence?.sourceDirAbs).toBe(path.join(dir, "shots"));
+    expect(node?.evidence?.manifest.evidence[0].id).toBe("empty-list");
+    expect(node?.frontmatter).toMatchObject({
       title: "E2E Test Evidence",
       description: "Proof",
       navCategory: "Quality",
@@ -70,7 +67,7 @@ describe("resolveRoutes with evidenceGalleries", () => {
       hidden: false,
       toc: false,
     });
-    expect(node!.sourcePath).toBe("");
+    expect(node?.sourcePath).toBe("");
   });
 
   it("derives a default title from the route path", async () => {
@@ -81,8 +78,6 @@ describe("resolveRoutes with evidenceGalleries", () => {
 
   it("throws when the manifest is missing", async () => {
     const cfg = await configFor({ source: "./nope", path: "/evidence" });
-    await expect(resolveRoutes(cfg)).rejects.toThrow(
-      "Evidence manifest not found",
-    );
+    await expect(resolveRoutes(cfg)).rejects.toThrow("Evidence manifest not found");
   });
 });

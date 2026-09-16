@@ -16,16 +16,12 @@ export async function copyAssets(
 ): Promise<void> {
   for (const { file, parsed } of items) {
     const srcDir = path.dirname(file.sourcePath);
-    const outDir = path.dirname(
-      path.join(config.outputDirAbs, outFileFor(file.routePath)),
-    );
+    const outDir = path.dirname(path.join(config.outputDirAbs, outFileFor(file.routePath)));
     for (const rel of parsed.assets) {
       const [clean] = rel.split(/[?#]/);
       const srcAbs = path.resolve(srcDir, clean);
       if (!(await exists(srcAbs))) {
-        console.warn(
-          `[static-docs] missing asset: ${clean} (from ${file.relativePath})`,
-        );
+        console.warn(`[static-docs] missing asset: ${clean} (from ${file.relativePath})`);
         continue;
       }
       const destAbs = path.resolve(outDir, clean);
@@ -38,9 +34,7 @@ export async function copyAssets(
  * Copy the self-contained mermaid runtime bundle into `<output>/assets/`.
  * Called once per build when at least one page contains a mermaid diagram.
  */
-export async function copyMermaidRuntime(
-  config: ResolvedConfig,
-): Promise<void> {
+export async function copyMermaidRuntime(config: ResolvedConfig): Promise<void> {
   const src = require.resolve("mermaid/dist/mermaid.min.js");
   const dest = path.join(config.outputDirAbs, "assets", "mermaid.min.js");
   await copyFileEnsured(src, dest);
@@ -53,9 +47,7 @@ export async function copyComponentScripts(
 ): Promise<void> {
   for (const file of files) {
     if (!file.component) continue;
-    const outDir = path.dirname(
-      path.join(config.outputDirAbs, outFileFor(file.routePath)),
-    );
+    const outDir = path.dirname(path.join(config.outputDirAbs, outFileFor(file.routePath)));
     await copyFileEnsured(
       file.component.scriptSourceAbs,
       path.join(outDir, file.component.scriptFileName),
@@ -64,15 +56,10 @@ export async function copyComponentScripts(
 }
 
 /** Copy every image referenced by each gallery's manifest next to its index.html. */
-export async function copyEvidenceAssets(
-  files: FileNode[],
-  config: ResolvedConfig,
-): Promise<void> {
+export async function copyEvidenceAssets(files: FileNode[], config: ResolvedConfig): Promise<void> {
   for (const file of files) {
     if (!file.evidence) continue;
-    const outDir = path.dirname(
-      path.join(config.outputDirAbs, outFileFor(file.routePath)),
-    );
+    const outDir = path.dirname(path.join(config.outputDirAbs, outFileFor(file.routePath)));
     const seen = new Set<string>();
     for (const entry of file.evidence.manifest.evidence) {
       for (const shot of Object.values(entry.browsers)) {
@@ -98,9 +85,7 @@ export async function copyEvidenceRuntime(
 ): Promise<void> {
   for (const file of files) {
     if (!file.evidence) continue;
-    const outDir = path.dirname(
-      path.join(config.outputDirAbs, outFileFor(file.routePath)),
-    );
+    const outDir = path.dirname(path.join(config.outputDirAbs, outFileFor(file.routePath)));
     await outputFile(path.join(outDir, GALLERY_JS_FILENAME), GALLERY_JS);
     await outputFile(path.join(outDir, GALLERY_CSS_FILENAME), GALLERY_CSS);
   }

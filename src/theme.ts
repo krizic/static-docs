@@ -1,10 +1,10 @@
-import path from "node:path";
 import { spawn } from "node:child_process";
 import { rm } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { ResolvedConfig } from "./config.js";
-import { outputFile, exists } from "./utils/fs.js";
+import { exists, outputFile } from "./utils/fs.js";
 
 const require = createRequire(import.meta.url);
 const here = path.dirname(fileURLToPath(import.meta.url)); // dist/ at runtime
@@ -16,9 +16,7 @@ async function themeCssPath(theme: string): Promise<string> {
     path.resolve(here, "..", "src", "themes", theme, "theme.css"),
   ];
   for (const c of candidates) if (await exists(c)) return c;
-  throw new Error(
-    `Theme "${theme}" CSS not found. Looked in:\n${candidates.join("\n")}`,
-  );
+  throw new Error(`Theme "${theme}" CSS not found. Looked in:\n${candidates.join("\n")}`);
 }
 
 function tailwindBin(): string {
@@ -38,9 +36,7 @@ export async function compileTheme(config: ResolvedConfig): Promise<void> {
   const outDir = config.outputDirAbs;
   const entryPath = path.join(outDir, "_entry.css");
   const themeImport = JSON.stringify(themeCss.replace(/\\/g, "/"));
-  const sourceGlob = JSON.stringify(
-    path.join(outDir, "**/*.html").replace(/\\/g, "/"),
-  );
+  const sourceGlob = JSON.stringify(path.join(outDir, "**/*.html").replace(/\\/g, "/"));
 
   let entry = `@import ${themeImport};\n@source ${sourceGlob};\n`;
   if (config.customCss) {
@@ -57,16 +53,12 @@ export async function compileTheme(config: ResolvedConfig): Promise<void> {
 function runTailwind(input: string, output: string): Promise<void> {
   const bin = tailwindBin();
   return new Promise((resolve, reject) => {
-    const child = spawn(
-      process.execPath,
-      [bin, "-i", input, "-o", output, "--minify"],
-      { stdio: "inherit" },
-    );
+    const child = spawn(process.execPath, [bin, "-i", input, "-o", output, "--minify"], {
+      stdio: "inherit",
+    });
     child.on("error", reject);
     child.on("exit", (code) =>
-      code === 0
-        ? resolve()
-        : reject(new Error(`Tailwind CLI exited with code ${code}`)),
+      code === 0 ? resolve() : reject(new Error(`Tailwind CLI exited with code ${code}`)),
     );
   });
 }

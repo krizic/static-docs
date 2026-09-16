@@ -2,10 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  EvidenceManifestSchema,
-  loadEvidenceManifest,
-} from "../../src/evidence/manifest.js";
+import { EvidenceManifestSchema, loadEvidenceManifest } from "../../src/evidence/manifest.js";
 
 const VALID = {
   generatedAt: "2026-09-16T13:27:10.400Z",
@@ -32,9 +29,7 @@ describe("EvidenceManifestSchema", () => {
     raw.evidence = [{ ...VALID.evidence[0], metadata: "present" }];
     const parsed = EvidenceManifestSchema.parse(raw);
     expect(parsed.evidence[0].id).toBe("authenticated-list");
-    expect((parsed.evidence[0] as Record<string, unknown>).metadata).toBe(
-      "present",
-    );
+    expect((parsed.evidence[0] as Record<string, unknown>).metadata).toBe("present");
   });
 
   it("rejects a missing required field", () => {
@@ -73,17 +68,15 @@ describe("loadEvidenceManifest", () => {
   });
 
   it("throws a clear error when the file is missing", async () => {
-    await expect(
-      loadEvidenceManifest(path.join(dir, "manifest.json")),
-    ).rejects.toThrow("Evidence manifest not found");
+    await expect(loadEvidenceManifest(path.join(dir, "manifest.json"))).rejects.toThrow(
+      "Evidence manifest not found",
+    );
   });
 
   it("throws with Zod issues when invalid", async () => {
     const p = path.join(dir, "manifest.json");
     await writeFile(p, JSON.stringify({ generatedAt: "x", evidence: [{}] }));
-    await expect(loadEvidenceManifest(p)).rejects.toThrow(
-      "Invalid evidence manifest",
-    );
+    await expect(loadEvidenceManifest(p)).rejects.toThrow("Invalid evidence manifest");
   });
 
   it("rejects duplicate evidence ids", async () => {

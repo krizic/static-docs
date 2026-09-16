@@ -33,7 +33,7 @@ describe("evidenceGalleries config", () => {
     );
     const cfg = await loadConfig(p);
     expect(cfg.evidenceGalleries).toHaveLength(1);
-    expect(cfg.evidenceGalleries![0]).toMatchObject({
+    expect(cfg.evidenceGalleries?.[0]).toMatchObject({
       source: "./e2e-screenshots",
       path: "/e2e-evidence",
       title: "E2E Test Evidence",
@@ -52,16 +52,13 @@ describe("evidenceGalleries config", () => {
       }),
     );
     const cfg = await loadConfig(p);
-    expect(cfg.evidenceGalleries![0].hidden).toBe(false);
-    expect(cfg.evidenceGalleries![0].title).toBeUndefined();
+    expect(cfg.evidenceGalleries?.[0].hidden).toBe(false);
+    expect(cfg.evidenceGalleries?.[0].title).toBeUndefined();
   });
 
   it("rejects an entry without source", async () => {
     const p = path.join(dir, "static-docs.config.json");
-    await writeFile(
-      p,
-      JSON.stringify({ evidenceGalleries: [{ path: "/x" }] }),
-    );
+    await writeFile(p, JSON.stringify({ evidenceGalleries: [{ path: "/x" }] }));
     await expect(loadConfig(p)).rejects.toThrow("Invalid config");
   });
 

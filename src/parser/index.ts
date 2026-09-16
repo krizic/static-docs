@@ -1,23 +1,21 @@
-import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
+import path from "node:path";
+import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import rehypePrettyCode, { type Options as PrettyCodeOptions } from "rehype-pretty-code";
+import rehypeSlug from "rehype-slug";
+import rehypeStringify from "rehype-stringify";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
-import remarkSmartypants from "remark-smartypants";
+import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
-import rehypeSlug from "rehype-slug";
-import rehypeAutolinkHeadings from "rehype-autolink-headings";
-import rehypePrettyCode, {
-  type Options as PrettyCodeOptions,
-} from "rehype-pretty-code";
-import rehypeStringify from "rehype-stringify";
+import remarkSmartypants from "remark-smartypants";
+import { unified } from "unified";
 import type { ResolvedConfig } from "../config.js";
 import type { FileNode, ParsedMarkdown, TocEntry } from "../types.js";
-import { extractMeta } from "./meta.js";
 import { rehypeRewriteLinks } from "./links.js";
-import { rehypeCollectToc, nestToc } from "./toc.js";
-import { rehypeMermaid, type MermaidState } from "./mermaid.js";
+import { type MermaidState, rehypeMermaid } from "./mermaid.js";
+import { extractMeta } from "./meta.js";
+import { nestToc, rehypeCollectToc } from "./toc.js";
 
 /** No-op unified plugin used to conditionally skip remark plugins. */
 function noop() {

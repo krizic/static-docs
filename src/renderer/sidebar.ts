@@ -8,14 +8,10 @@ function esc(s: string): string {
 function href(routePath: string, basePath: string): string {
   const url = withBase(routePath, basePath);
   // Trailing slash so relative asset URLs on the target page resolve under the route directory.
-  return url.endsWith("/") ? url : url + "/";
+  return url.endsWith("/") ? url : `${url}/`;
 }
 
-export function renderSidebar(
-  nav: NavNode[],
-  currentRoute: string,
-  basePath: string,
-): string {
+export function renderSidebar(nav: NavNode[], currentRoute: string, basePath: string): string {
   return `<ul class="nav-list">${nav
     .map((n) => renderNode(n, currentRoute, basePath, 0))
     .join("")}</ul>`;
@@ -23,24 +19,19 @@ export function renderSidebar(
 
 function leaf(node: NavNode, current: string, basePath: string): string {
   const active = node.routePath === current ? " nav-item-active" : "";
+  // Leaf nodes always carry a routePath; group headers are the only nodes without one.
+  const target = node.routePath ?? "/";
   return `<li><a class="nav-item${active}" href="${href(
-    node.routePath!,
+    target,
     basePath,
   )}">${esc(node.title)}</a></li>`;
 }
 
-function renderNode(
-  node: NavNode,
-  current: string,
-  basePath: string,
-  depth: number,
-): string {
+function renderNode(node: NavNode, current: string, basePath: string, depth: number): string {
   const isGroup = node.children.length > 0;
   if (!isGroup) return leaf(node, current, basePath);
 
-  const childHtml = node.children
-    .map((c) => renderNode(c, current, basePath, depth + 1))
-    .join("");
+  const childHtml = node.children.map((c) => renderNode(c, current, basePath, depth + 1)).join("");
   const active = node.routePath === current ? " nav-item-active" : "";
 
   // Top-level sections keep the small-caps header.

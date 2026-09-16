@@ -1,6 +1,6 @@
-import matter from "gray-matter";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import matter from "gray-matter";
 import type { ResolvedConfig } from "./config.js";
 import { loadEvidenceManifest } from "./evidence/manifest.js";
 import { scanRepo } from "./scanner.js";
@@ -9,9 +9,7 @@ import { exists } from "./utils/fs.js";
 import { toRoutePath } from "./utils/path.js";
 
 /** Build FileNodes from config routes and componentRoutes, else scan the repo. */
-export async function resolveRoutes(
-  config: ResolvedConfig,
-): Promise<FileNode[]> {
+export async function resolveRoutes(config: ResolvedConfig): Promise<FileNode[]> {
   const nodes: FileNode[] = [];
   const seen = new Set<string>();
 
@@ -41,15 +39,11 @@ function claim(seen: Set<string>, routePath: string): boolean {
   return true;
 }
 
-async function markdownRouteNodes(
-  config: ResolvedConfig,
-): Promise<FileNode[]> {
+async function markdownRouteNodes(config: ResolvedConfig): Promise<FileNode[]> {
   const nodes: FileNode[] = [];
   for (const r of config.routes ?? []) {
     const sourcePath = path.resolve(config.rootDir, r.source);
-    const relativePath = path
-      .relative(config.rootDir, sourcePath)
-      .replace(/\\/g, "/");
+    const relativePath = path.relative(config.rootDir, sourcePath).replace(/\\/g, "/");
     const fileFm = await readFrontmatter(sourcePath);
     const frontmatter: Frontmatter = { ...fileFm, ...(r.meta as Frontmatter) };
     nodes.push({
@@ -62,23 +56,17 @@ async function markdownRouteNodes(
   return nodes;
 }
 
-async function componentRouteNodes(
-  config: ResolvedConfig,
-): Promise<FileNode[]> {
+async function componentRouteNodes(config: ResolvedConfig): Promise<FileNode[]> {
   const nodes: FileNode[] = [];
   for (const r of config.componentRoutes ?? []) {
     const routePath = normalizeRoute(r.path);
     const scriptSourceAbs = path.resolve(config.rootDir, r.script);
     if (!(await exists(scriptSourceAbs))) {
-      throw new Error(
-        `Component route "${routePath}": script not found: ${scriptSourceAbs}`,
-      );
+      throw new Error(`Component route "${routePath}": script not found: ${scriptSourceAbs}`);
     }
     nodes.push({
       sourcePath: "",
-      relativePath: path
-        .relative(config.rootDir, scriptSourceAbs)
-        .replace(/\\/g, "/"),
+      relativePath: path.relative(config.rootDir, scriptSourceAbs).replace(/\\/g, "/"),
       routePath,
       frontmatter: {
         title: r.title ?? defaultTitle(routePath),
@@ -97,21 +85,15 @@ async function componentRouteNodes(
   return nodes;
 }
 
-async function evidenceGalleryNodes(
-  config: ResolvedConfig,
-): Promise<FileNode[]> {
+async function evidenceGalleryNodes(config: ResolvedConfig): Promise<FileNode[]> {
   const nodes: FileNode[] = [];
   for (const g of config.evidenceGalleries ?? []) {
     const routePath = normalizeRoute(g.path);
     const sourceDirAbs = path.resolve(config.rootDir, g.source);
-    const manifest = await loadEvidenceManifest(
-      path.join(sourceDirAbs, "manifest.json"),
-    );
+    const manifest = await loadEvidenceManifest(path.join(sourceDirAbs, "manifest.json"));
     nodes.push({
       sourcePath: "",
-      relativePath:
-        path.relative(config.rootDir, sourceDirAbs).replace(/\\/g, "/") +
-        "/manifest.json",
+      relativePath: `${path.relative(config.rootDir, sourceDirAbs).replace(/\\/g, "/")}/manifest.json`,
       routePath,
       frontmatter: {
         title: g.title ?? defaultTitle(routePath),
@@ -135,7 +117,7 @@ function defaultTitle(routePath: string): string {
 function normalizeRoute(p: string): string {
   const clean = p.replace(/\\/g, "/").replace(/\/+$/g, "");
   if (clean === "" || clean === "/") return "/";
-  return clean.startsWith("/") ? clean : "/" + clean;
+  return clean.startsWith("/") ? clean : `/${clean}`;
 }
 
 async function readFrontmatter(file: string): Promise<Frontmatter> {

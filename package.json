@@ -53,9 +53,12 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
     "schema": "node dist/cli.js schema",
     "docs": "node dist/cli.js build",
     "llm": "repo-context --out LLM.md",
+    "prepare": "lefthook install",
     "prepublishOnly": "pnpm run build && pnpm run llm"
   },
   "dependencies": {
@@ -83,9 +86,11 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.13",
     "@krizic/repo-context": "^0.1.1",
     "@types/hast": "^3.0.4",
     "@types/node": "^22.0.0",
+    "lefthook": "^2.1.14",
     "tsup": "^8.5.1",
     "typescript": "^7.0.0",
     "vitest": "^5.0.1"

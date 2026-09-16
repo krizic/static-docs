@@ -1,0 +1,21 @@
+# Lint and format staged files with Biome before every commit.
+# Config reference: https://lefthook.dev/configuration/
+pre-commit:
+  parallel: true
+  jobs:
+    - name: biome
+      glob: "*.{ts,js,mjs,json}"
+      run: ./node_modules/.bin/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files} && git update-index --again
+
+#       run: bundle exec rubocop --force-exclusion -- {all_files}
+#
+#     - name: govet
+#       files: git ls-files -m
+#       glob: "*.go"
+#       run: go vet -- {files}
+#
+#     - script: "hello.js"
+#       runner: node
+#
+#     - script: "hello.go"
+#       runner: go run

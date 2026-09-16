@@ -47,11 +47,7 @@ function badge(status: "passed" | "failed"): string {
   return `<span class="ev-badge ev-badge-${status}">${status}</span>`;
 }
 
-function thumbHtml(
-  file: string | undefined,
-  missing: Set<string>,
-  title: string,
-): string {
+function thumbHtml(file: string | undefined, missing: Set<string>, title: string): string {
   if (file && !missing.has(file)) {
     return `<img src="${esc(file)}" alt="${esc(title)}" loading="lazy">`;
   }
@@ -106,9 +102,7 @@ function modalHtml(entry: EvidenceEntry, missing: Set<string>): string {
 }
 
 /** Render an evidence-gallery route as a full HTML page. */
-export async function renderEvidencePage(
-  ctx: EvidencePageContext,
-): Promise<string> {
+export async function renderEvidencePage(ctx: EvidencePageContext): Promise<string> {
   const { file, navTree, config, assetVersion } = ctx;
   const spec = file.evidence;
   if (!spec) {
@@ -139,9 +133,7 @@ ${entries.map((e) => modalHtml(e, missing)).join("\n")}
   return htmlShell({
     title: String(file.frontmatter.title ?? config.siteName),
     siteName: config.siteName,
-    description: file.frontmatter.description
-      ? String(file.frontmatter.description)
-      : undefined,
+    description: file.frontmatter.description ? String(file.frontmatter.description) : undefined,
     basePath: config.basePath,
     contentHtml,
     sidebarHtml: renderSidebar(navTree, file.routePath, config.basePath),

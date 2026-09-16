@@ -31,13 +31,10 @@ function formatVersion(v: string): string {
 }
 
 export function htmlShell(d: LayoutData): string {
-  const base = d.basePath.endsWith("/") ? d.basePath : d.basePath + "/";
+  const base = d.basePath.endsWith("/") ? d.basePath : `${d.basePath}/`;
   const themeHref =
-    withBase("theme.css", d.basePath) +
-    (d.assetVersion ? `?v=${d.assetVersion}` : "");
-  const meta = d.description
-    ? `<meta name="description" content="${esc(d.description)}">`
-    : "";
+    withBase("theme.css", d.basePath) + (d.assetVersion ? `?v=${d.assetVersion}` : "");
+  const meta = d.description ? `<meta name="description" content="${esc(d.description)}">` : "";
   const tocAside =
     d.showToc && d.tocHtml
       ? `<aside class="hidden lg:block w-64 shrink-0 pl-8 py-12"><div class="sticky top-20"><p class="toc-heading">On this page</p><nav class="toc">${d.tocHtml}</nav></div></aside>`

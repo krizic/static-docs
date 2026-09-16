@@ -1,7 +1,7 @@
-import chokidar from "chokidar";
 import { readFile } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
+import chokidar from "chokidar";
 import { build } from "./builder.js";
 import { loadConfig } from "./config.js";
 import { exists } from "./utils/fs.js";
@@ -24,10 +24,7 @@ const RELOAD_SNIPPET = `<script>
 (function(){var s=new EventSource("/__reload");s.onmessage=function(){location.reload()};})();
 </script>`;
 
-export async function dev(
-  configPath = "static-docs.config.json",
-  port = 4321,
-): Promise<void> {
+export async function dev(configPath = "static-docs.config.json", port = 4321): Promise<void> {
   const config = await loadConfig(configPath);
   const outDir = config.outputDirAbs;
   const clients = new Set<http.ServerResponse>();

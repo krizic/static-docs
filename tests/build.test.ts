@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -43,10 +43,7 @@ describe("build with evidenceGalleries", () => {
   beforeEach(async () => {
     dir = await mkdtemp(path.join(tmpdir(), "build-"));
     await mkdir(path.join(dir, "shots"), { recursive: true });
-    await writeFile(
-      path.join(dir, "shots", "manifest.json"),
-      JSON.stringify(MANIFEST),
-    );
+    await writeFile(path.join(dir, "shots", "manifest.json"), JSON.stringify(MANIFEST));
     await writeFile(path.join(dir, "shots", "empty-list-chromium.png"), PNG);
     await writeFile(path.join(dir, "shots", "empty-list-webkit.png"), PNG);
     await writeFile(path.join(dir, "index.md"), "# Home\n");
@@ -54,9 +51,7 @@ describe("build with evidenceGalleries", () => {
       path.join(dir, "static-docs.config.json"),
       JSON.stringify({
         outputDir: "./out",
-        evidenceGalleries: [
-          { source: "./shots", path: "/e2e-evidence", title: "E2E Evidence" },
-        ],
+        evidenceGalleries: [{ source: "./shots", path: "/e2e-evidence", title: "E2E Evidence" }],
       }),
     );
   });
@@ -65,9 +60,7 @@ describe("build with evidenceGalleries", () => {
   });
 
   it("emits the gallery page, runtime, and images", async () => {
-    const { config } = await build(
-      path.join(dir, "static-docs.config.json"),
-    );
+    const { config } = await build(path.join(dir, "static-docs.config.json"));
     const galleryHtml = await readFile(
       path.join(config.outputDirAbs, "e2e-evidence", "index.html"),
       "utf8",
@@ -79,24 +72,14 @@ describe("build with evidenceGalleries", () => {
     expect(galleryHtml).toContain("evidence-gallery.css");
     expect(galleryHtml).toContain("E2E Evidence"); // sidebar title
     expect(
-      await exists(
-        path.join(config.outputDirAbs, "e2e-evidence", "evidence-gallery.js"),
-      ),
+      await exists(path.join(config.outputDirAbs, "e2e-evidence", "evidence-gallery.js")),
     ).toBe(true);
     expect(
-      await exists(
-        path.join(
-          config.outputDirAbs,
-          "e2e-evidence",
-          "empty-list-chromium.png",
-        ),
-      ),
+      await exists(path.join(config.outputDirAbs, "e2e-evidence", "empty-list-chromium.png")),
     ).toBe(true);
     // missing image: warned but not copied, build succeeded
-    expect(
-      await exists(
-        path.join(config.outputDirAbs, "e2e-evidence", "does-not-exist.png"),
-      ),
-    ).toBe(false);
+    expect(await exists(path.join(config.outputDirAbs, "e2e-evidence", "does-not-exist.png"))).toBe(
+      false,
+    );
   });
 });

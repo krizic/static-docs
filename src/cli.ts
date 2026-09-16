@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { cac } from "cac";
 import { writeFile } from "node:fs/promises";
+import { cac } from "cac";
 import { build } from "./builder.js";
 import { toJsonSchema } from "./config.js";
 import { dev } from "./dev.js";

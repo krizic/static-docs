@@ -1,5 +1,5 @@
+import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
-import type { Root, Element } from "hast";
 import { resolveInternalLink } from "../utils/path.js";
 
 export interface LinkOptions {
@@ -17,18 +17,9 @@ export function rehypeRewriteLinks(options: LinkOptions) {
       if (node.tagName === "a") {
         const href = node.properties?.href;
         if (typeof href !== "string") return;
-        if (
-          EXTERNAL.test(href) ||
-          href.startsWith("#") ||
-          href.startsWith("mailto:")
-        )
-          return;
-        if (/\.md(#.*)?$/i.test(href)) {
-          node.properties!.href = resolveInternalLink(
-            href,
-            options.currentRelDir,
-            options.basePath,
-          );
+        if (EXTERNAL.test(href) || href.startsWith("#") || href.startsWith("mailto:")) return;
+        if (/\.md(#.*)?$/i.test(href) && node.properties) {
+          node.properties.href = resolveInternalLink(href, options.currentRelDir, options.basePath);
         }
       } else if (node.tagName === "img") {
         const src = node.properties?.src;

@@ -23,9 +23,7 @@ export interface BuildResult {
   pages: number;
 }
 
-export async function build(
-  configPath = "static-docs.config.json",
-): Promise<BuildResult> {
+export async function build(configPath = "static-docs.config.json"): Promise<BuildResult> {
   const config = await loadConfig(configPath);
   const files = await resolveRoutes(config);
   if (files.length === 0) {
@@ -40,17 +38,11 @@ export async function build(
   for (const file of files) {
     const outPath = path.join(config.outputDirAbs, outFileFor(file.routePath));
     if (file.evidence) {
-      await outputFile(
-        outPath,
-        await renderEvidencePage({ file, navTree, config, assetVersion }),
-      );
+      await outputFile(outPath, await renderEvidencePage({ file, navTree, config, assetVersion }));
       continue;
     }
     if (file.component) {
-      await outputFile(
-        outPath,
-        renderComponentPage({ file, navTree, config, assetVersion }),
-      );
+      await outputFile(outPath, renderComponentPage({ file, navTree, config, assetVersion }));
       continue;
     }
     const parsed = await parseMarkdown(file, config);
@@ -68,8 +60,6 @@ export async function build(
   }
   await compileTheme(config);
 
-  console.log(
-    `[static-docs] built ${files.length} page(s) → ${config.outputDir}`,
-  );
+  console.log(`[static-docs] built ${files.length} page(s) → ${config.outputDir}`);
   return { config, pages: files.length };
 }

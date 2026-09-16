@@ -1,6 +1,6 @@
+import type { Element, Root } from "hast";
+import { toString as hastToString } from "hast-util-to-string";
 import { visit } from "unist-util-visit";
-import { toString } from "hast-util-to-string";
-import type { Root, Element } from "hast";
 
 export interface MermaidState {
   found: boolean;
@@ -23,11 +23,10 @@ export function rehypeMermaid(state: MermaidState) {
       );
       if (!code) return;
       const classes = code.properties?.className;
-      const isMermaid =
-        Array.isArray(classes) && classes.includes("language-mermaid");
+      const isMermaid = Array.isArray(classes) && classes.includes("language-mermaid");
       if (!isMermaid) return;
 
-      const source = toString(code);
+      const source = hastToString(code);
       state.found = true;
       node.properties = { className: ["mermaid"] };
       node.children = [{ type: "text", value: source }];

@@ -13,19 +13,15 @@ export function toRoutePath(relPath: string): string {
   p = p.replace(/\/(readme|index)$/i, "");
   p = p.replace(/^(readme|index)$/i, "");
   p = p.replace(/^\/+|\/+$/g, "");
-  return "/" + p; // "/" for root, "/guides/start" otherwise
+  return `/${p}`; // "/" for root, "/guides/start" otherwise
 }
 
 /** Resolve an internal ./other.md link relative to the current route dir. */
-export function resolveInternalLink(
-  href: string,
-  currentRelDir: string,
-  basePath: string,
-): string {
+export function resolveInternalLink(href: string, currentRelDir: string, basePath: string): string {
   const [pathPart, hash = ""] = href.split("#");
   const cleaned = pathPart.replace(/\\/g, "/");
   // join currentRelDir + cleaned, normalize .. and .
-  const segments = (currentRelDir + "/" + cleaned).split("/");
+  const segments = `${currentRelDir}/${cleaned}`.split("/");
   const stack: string[] = [];
   for (const seg of segments) {
     if (seg === "" || seg === ".") continue;
@@ -34,12 +30,10 @@ export function resolveInternalLink(
   }
   let joined = stack.join("/");
   joined = joined.replace(/\.md$/i, "");
-  joined = joined
-    .replace(/\/(readme|index)$/i, "")
-    .replace(/^(readme|index)$/i, "");
-  const base = basePath.endsWith("/") ? basePath : basePath + "/";
+  joined = joined.replace(/\/(readme|index)$/i, "").replace(/^(readme|index)$/i, "");
+  const base = basePath.endsWith("/") ? basePath : `${basePath}/`;
   const url = (base + joined).replace(/\/+/g, "/");
-  const withSlash = url.endsWith("/") ? url : url + "/";
+  const withSlash = url.endsWith("/") ? url : `${url}/`;
   return hash ? `${withSlash}#${hash}` : withSlash;
 }
 
@@ -50,6 +44,6 @@ export function outFileFor(routePath: string): string {
 
 /** Join basePath + routePath into a base-path-absolute URL, e.g. "/base/", "/guides/start" -> "/base/guides/start". */
 export function withBase(routePath: string, basePath: string): string {
-  const base = basePath.endsWith("/") ? basePath : basePath + "/";
+  const base = basePath.endsWith("/") ? basePath : `${basePath}/`;
   return (base + routePath.replace(/^\/+/, "")).replace(/\/+/g, "/");
 }

@@ -1,6 +1,6 @@
+import type { Element, Root } from "hast";
+import { toString as hastToString } from "hast-util-to-string";
 import { visit } from "unist-util-visit";
-import { toString } from "hast-util-to-string";
-import type { Root, Element } from "hast";
 import type { TocEntry } from "../types.js";
 
 export interface TocOptions {
@@ -20,7 +20,7 @@ export function rehypeCollectToc(options: TocOptions) {
       if (typeof id !== "string") return;
       options.collect.push({
         depth,
-        text: toString(node),
+        text: hastToString(node),
         slug: id,
         children: [],
       });

@@ -20,8 +20,7 @@ export function renderPage(ctx: PageContext): string {
     (fm.title && String(fm.title)) ||
     file.routePath.split("/").filter(Boolean).pop() ||
     config.siteName;
-  const showToc =
-    config.toc.enabled && fm.toc !== false && parsed.toc.length > 0;
+  const showToc = config.toc.enabled && fm.toc !== false && parsed.toc.length > 0;
 
   return htmlShell({
     title: String(title),
@@ -70,9 +69,7 @@ export function renderComponentPage(ctx: ComponentPageContext): string {
   return htmlShell({
     title,
     siteName: config.siteName,
-    description: file.frontmatter.description
-      ? String(file.frontmatter.description)
-      : undefined,
+    description: file.frontmatter.description ? String(file.frontmatter.description) : undefined,
     basePath: config.basePath,
     contentHtml: `<div class="wb-host"><${spec.tag}></${spec.tag}></div>`,
     sidebarHtml: renderSidebar(navTree, file.routePath, config.basePath),

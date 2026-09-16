@@ -27,9 +27,7 @@ export type EvidenceEntry = z.infer<typeof EvidenceEntrySchema>;
 export type EvidenceManifest = z.infer<typeof EvidenceManifestSchema>;
 
 /** Load and validate an evidence manifest; throws with actionable messages. */
-export async function loadEvidenceManifest(
-  manifestPath: string,
-): Promise<EvidenceManifest> {
+export async function loadEvidenceManifest(manifestPath: string): Promise<EvidenceManifest> {
   let raw: unknown;
   try {
     raw = JSON.parse(await readFile(manifestPath, "utf8"));
@@ -37,9 +35,7 @@ export async function loadEvidenceManifest(
     if ((err as NodeJS.ErrnoException).code === "ENOENT") {
       throw new Error(`Evidence manifest not found: ${manifestPath}`);
     }
-    throw new Error(
-      `Failed to parse evidence manifest ${manifestPath}: ${(err as Error).message}`,
-    );
+    throw new Error(`Failed to parse evidence manifest ${manifestPath}: ${(err as Error).message}`);
   }
   const parsed = EvidenceManifestSchema.safeParse(raw);
   if (!parsed.success) {
