@@ -1,3 +1,5 @@
+import type { EvidenceManifest } from "./evidence/manifest.js";
+
 export interface Frontmatter {
   title?: string;
   description?: string;
@@ -15,12 +17,18 @@ export interface ComponentSpec {
   scriptFileName: string; // file name emitted next to the route's index.html
 }
 
+export interface EvidenceSpec {
+  sourceDirAbs: string; // absolute path to the gallery source dir
+  manifest: EvidenceManifest; // validated manifest
+}
+
 export interface FileNode {
   sourcePath: string; // absolute path to .md; "" for component routes
   relativePath: string; // relative to repo root, posix
   routePath: string; // e.g. "/guides/start" or "/" for home
   frontmatter: Frontmatter;
   component?: ComponentSpec; // set for web-component routes
+  evidence?: EvidenceSpec; // set for evidence-gallery routes
 }
 
 export interface TocEntry {

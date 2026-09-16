@@ -2,6 +2,7 @@ import matter from "gray-matter";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { ResolvedConfig } from "./config.js";
+import { loadEvidenceManifest } from "./evidence/manifest.js";
 import { scanRepo } from "./scanner.js";
 import type { FileNode, Frontmatter } from "./types.js";
 import { exists } from "./utils/fs.js";
@@ -23,6 +24,9 @@ export async function resolveRoutes(
     if (claim(seen, node.routePath)) nodes.push(node);
   }
   for (const node of await componentRouteNodes(config)) {
+    if (claim(seen, node.routePath)) nodes.push(node);
+  }
+  for (const node of await evidenceGalleryNodes(config)) {
     if (claim(seen, node.routePath)) nodes.push(node);
   }
   return nodes;
@@ -88,6 +92,36 @@ async function componentRouteNodes(
         scriptSourceAbs,
         scriptFileName: path.basename(scriptSourceAbs),
       },
+    });
+  }
+  return nodes;
+}
+
+async function evidenceGalleryNodes(
+  config: ResolvedConfig,
+): Promise<FileNode[]> {
+  const nodes: FileNode[] = [];
+  for (const g of config.evidenceGalleries ?? []) {
+    const routePath = normalizeRoute(g.path);
+    const sourceDirAbs = path.resolve(config.rootDir, g.source);
+    const manifest = await loadEvidenceManifest(
+      path.join(sourceDirAbs, "manifest.json"),
+    );
+    nodes.push({
+      sourcePath: "",
+      relativePath:
+        path.relative(config.rootDir, sourceDirAbs).replace(/\\/g, "/") +
+        "/manifest.json",
+      routePath,
+      frontmatter: {
+        title: g.title ?? defaultTitle(routePath),
+        description: g.description,
+        navOrder: g.navOrder,
+        navCategory: g.navCategory,
+        hidden: g.hidden,
+        toc: false,
+      },
+      evidence: { sourceDirAbs, manifest },
     });
   }
   return nodes;
