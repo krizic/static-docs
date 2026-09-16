@@ -52,6 +52,7 @@
     "build": "tsup && tsc --emitDeclarationOnly --declaration",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "schema": "node dist/cli.js schema",
     "docs": "node dist/cli.js build",
     "llm": "repo-context --out LLM.md",
@@ -86,6 +87,7 @@
     "@types/hast": "^3.0.4",
     "@types/node": "^22.0.0",
     "tsup": "^8.5.1",
-    "typescript": "^7.0.0"
+    "typescript": "^7.0.0",
+    "vitest": "^5.0.1"
   }
 }
