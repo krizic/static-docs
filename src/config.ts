@@ -33,6 +33,18 @@ export const ComponentRouteSchema = z.object({
 
 export type ComponentRoute = z.infer<typeof ComponentRouteSchema>;
 
+export const EvidenceGallerySchema = z.object({
+  source: z.string(),
+  path: z.string(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  navCategory: z.string().optional(),
+  navOrder: z.number().optional(),
+  hidden: z.boolean().default(false),
+});
+
+export type EvidenceGallery = z.infer<typeof EvidenceGallerySchema>;
+
 export const VersionSchema = z.union([
   z.string(),
   z.object({
@@ -52,6 +64,7 @@ export const ConfigSchema = z.object({
   customCss: z.string().optional(),
   routes: z.array(RouteSchema).optional(),
   componentRoutes: z.array(ComponentRouteSchema).optional(),
+  evidenceGalleries: z.array(EvidenceGallerySchema).optional(),
   sidebar: z
     .object({
       auto: z.boolean().default(true),
