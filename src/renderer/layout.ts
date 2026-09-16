@@ -14,6 +14,7 @@ export interface LayoutData {
   version?: string;
   fullBleed?: boolean; // content fills the main column instead of a prose article
   bodyScript?: string; // pre-rendered <script> tag appended before </body>
+  headExtra?: string; // pre-rendered tags appended at the end of <head>
 }
 
 function esc(s: string): string {
@@ -67,6 +68,7 @@ export function htmlShell(d: LayoutData): string {
 <title>${esc(d.title)} | ${esc(d.siteName)}</title>
 ${meta}
 <link rel="stylesheet" href="${themeHref}">
+${d.headExtra ?? ""}
 </head>
 <body class="bg-white text-slate-900 antialiased">
 <header class="sticky top-0 z-50 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur md:px-8">
