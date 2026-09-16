@@ -3,9 +3,12 @@ import path from "node:path";
 import {
   copyAssets,
   copyComponentScripts,
+  copyEvidenceAssets,
+  copyEvidenceRuntime,
   copyMermaidRuntime,
 } from "./assets.js";
 import { loadConfig, type ResolvedConfig } from "./config.js";
+import { renderEvidencePage } from "./evidence/render.js";
 import { buildNavTree } from "./nav.js";
 import { parseMarkdown } from "./parser/index.js";
 import { renderComponentPage, renderPage } from "./renderer/page.js";
@@ -36,6 +39,13 @@ export async function build(
   const rendered: { file: FileNode; parsed: ParsedMarkdown }[] = [];
   for (const file of files) {
     const outPath = path.join(config.outputDirAbs, outFileFor(file.routePath));
+    if (file.evidence) {
+      await outputFile(
+        outPath,
+        await renderEvidencePage({ file, navTree, config, assetVersion }),
+      );
+      continue;
+    }
     if (file.component) {
       await outputFile(
         outPath,
@@ -51,6 +61,8 @@ export async function build(
 
   await copyAssets(rendered, config);
   await copyComponentScripts(files, config);
+  await copyEvidenceAssets(files, config);
+  await copyEvidenceRuntime(files, config);
   if (rendered.some((r) => r.parsed.hasMermaid)) {
     await copyMermaidRuntime(config);
   }
