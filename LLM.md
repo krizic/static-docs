@@ -1,10 +1,10 @@
 # Repository Context: @krizic/static-docs
 
-_Generated: 2026-09-16T17:58:59.733Z_
+_Generated: 2026-09-28T11:07:22.908Z_
 
 ## Overview
 
-- **@krizic/static-docs** (package.json) — v0.1.4
+- **@krizic/static-docs** (package.json) — v0.1.5
   - Turn Markdown into a static documentation site.
   - scripts: build, dev, typecheck, test, check, check:fix, schema, docs, llm, prepare, prepublishOnly
 
@@ -632,7 +632,7 @@ pre-commit:
 ```json
 {
   "name": "@krizic/static-docs",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Turn Markdown into a static documentation site.",
   "type": "module",
   "license": "MIT",
@@ -2030,6 +2030,13 @@ export type { BuildResult } from "./builder.js";
 export { build } from "./builder.js";
 export type { Config, ResolvedConfig } from "./config.js";
 export { ConfigSchema, loadConfig, toJsonSchema } from "./config.js";
+export type { BrowserShot, EvidenceEntry, EvidenceManifest } from "./evidence/manifest.js";
+export {
+  BrowserShotSchema,
+  EvidenceEntrySchema,
+  EvidenceManifestSchema,
+  loadEvidenceManifest,
+} from "./evidence/manifest.js";
 export { resolveRoutes } from "./router.js";
 export type {
   ComponentSpec,
@@ -3823,8 +3830,8 @@ export default defineConfig({
 ## Stats
 
 - Files listed: 50
-- Files embedded: 49 (106.2 KB)
+- Files embedded: 49 (106.4 KB)
 - Skipped (binary): 0
 - Skipped (over --max-bytes): 1
 - Skipped (over --max-total-bytes budget): 0
-- Generated in: 34ms
+- Generated in: 35ms
