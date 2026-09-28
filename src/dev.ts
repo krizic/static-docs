@@ -1,24 +1,9 @@
-import { readFile } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 import chokidar from "chokidar";
 import { build } from "./builder.js";
 import { loadConfig } from "./config.js";
-import { exists } from "./utils/fs.js";
-
-const MIME: Record<string, string> = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".svg": "image/svg+xml",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".ico": "image/x-icon",
-  ".pdf": "application/pdf",
-};
+import { createStaticHandler } from "./server.js";
 
 const RELOAD_SNIPPET = `<script>
 (function(){var s=new EventSource("/__reload");s.onmessage=function(){location.reload()};})();
@@ -38,8 +23,16 @@ export async function dev(configPath = "static-docs.config.json", port = 4321): 
   }
   await rebuild();
 
-  const server = http.createServer(async (req, res) => {
+  const handler = createStaticHandler({
+    root: outDir,
+    basePath: config.basePath,
+    transformHtml: (html) => html.replace("</body>", `${RELOAD_SNIPPET}</body>`),
+  });
+
+  const server = http.createServer((req, res) => {
     const url = (req.url || "/").split("?")[0];
+    // Matched before basePath stripping: the injected snippet always requests
+    // "/__reload", regardless of the configured basePath.
     if (url === "/__reload") {
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
@@ -51,26 +44,7 @@ export async function dev(configPath = "static-docs.config.json", port = 4321): 
       req.on("close", () => clients.delete(res));
       return;
     }
-
-    let filePath = path.join(outDir, decodeURIComponent(url));
-    if (url.endsWith("/")) filePath = path.join(filePath, "index.html");
-    if (!(await exists(filePath))) {
-      const withIndex = path.join(filePath, "index.html");
-      if (await exists(withIndex)) filePath = withIndex;
-    }
-    if (!(await exists(filePath))) {
-      res.writeHead(404, { "Content-Type": "text/html" });
-      res.end("<h1>404 Not Found</h1>");
-      return;
-    }
-    const ext = path.extname(filePath).toLowerCase();
-    const type = MIME[ext] || "application/octet-stream";
-    let body: Buffer | string = await readFile(filePath);
-    if (ext === ".html") {
-      body = body.toString("utf8").replace("</body>", `${RELOAD_SNIPPET}</body>`);
-    }
-    res.writeHead(200, { "Content-Type": type });
-    res.end(body);
+    handler(req, res);
   });
 
   server.listen(port, () => {

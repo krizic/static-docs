@@ -8,7 +8,7 @@ const pkg = createRequire(import.meta.url)("./package.json") as {
 };
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/cli.ts"],
+  entry: ["src/index.ts", "src/cli.ts", "src/playwright/index.ts", "src/playwright/reporter.ts"],
   format: ["esm"],
   target: "node18",
   dts: false,

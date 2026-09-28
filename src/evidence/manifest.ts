@@ -1,23 +1,32 @@
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
 
+/** Canonical file name of the evidence manifest inside a gallery source directory. */
+export const EVIDENCE_MANIFEST_FILENAME = "manifest.json";
+
+export const EvidenceStatusSchema = z.enum(["passed", "failed", "flaky", "skipped"]);
+
+export type EvidenceStatus = z.infer<typeof EvidenceStatusSchema>;
+
 export const BrowserShotSchema = z.object({
   file: z.string().min(1),
-  status: z.enum(["passed", "failed"]),
+  status: EvidenceStatusSchema,
 });
 
 export const EvidenceEntrySchema = z.looseObject({
   id: z.string().min(1),
-  title: z.string().min(1),
-  shows: z.string().min(1),
-  proves: z.string().min(1),
+  // Optional since 0.2.0: entries without annotations render a "Metadata missing" badge.
+  title: z.string().min(1).optional(),
+  shows: z.string().min(1).optional(),
+  proves: z.string().min(1).optional(),
   spec: z.string().optional(),
   test: z.string().optional(),
-  status: z.enum(["passed", "failed"]),
+  status: EvidenceStatusSchema,
   browsers: z.record(z.string(), BrowserShotSchema),
 });
 
 export const EvidenceManifestSchema = z.looseObject({
+  $schema: z.string().optional(),
   generatedAt: z.string().min(1),
   evidence: z.array(EvidenceEntrySchema),
 });
@@ -25,6 +34,11 @@ export const EvidenceManifestSchema = z.looseObject({
 export type BrowserShot = z.infer<typeof BrowserShotSchema>;
 export type EvidenceEntry = z.infer<typeof EvidenceEntrySchema>;
 export type EvidenceManifest = z.infer<typeof EvidenceManifestSchema>;
+
+/** JSON Schema (draft 2020-12) describing the evidence manifest format. */
+export function toEvidenceManifestJsonSchema(): unknown {
+  return z.toJSONSchema(EvidenceManifestSchema);
+}
 
 /** Load and validate an evidence manifest; throws with actionable messages. */
 export async function loadEvidenceManifest(manifestPath: string): Promise<EvidenceManifest> {

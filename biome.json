@@ -14,6 +14,7 @@
       "!dist",
       "!docs-build",
       "!schema.json",
+      "!evidence-manifest.schema.json",
       "!LLM.md",
       "!pnpm-lock.yaml"
     ]

@@ -32,21 +32,54 @@ describe("EvidenceManifestSchema", () => {
     expect((parsed.evidence[0] as Record<string, unknown>).metadata).toBe("present");
   });
 
-  it("rejects a missing required field", () => {
+  it("accepts a 0.1.5 manifest unchanged", () => {
+    const parsed = EvidenceManifestSchema.parse(structuredClone(VALID));
+    expect(parsed.evidence[0].title).toBe("Authentifizierte Dokumentliste");
+    expect(parsed.evidence[0].status).toBe("passed");
+    expect(parsed.evidence[0].browsers.firefox?.status).toBe("failed");
+  });
+
+  it("accepts entries without title/shows/proves (optional since 0.2.0)", () => {
+    const raw = structuredClone(VALID);
+    const entry = raw.evidence[0] as Record<string, unknown>;
+    delete entry.title;
+    delete entry.shows;
+    delete entry.proves;
+    const parsed = EvidenceManifestSchema.parse(raw);
+    expect(parsed.evidence[0].id).toBe("authenticated-list");
+    expect(parsed.evidence[0].title).toBeUndefined();
+  });
+
+  it("accepts flaky and skipped statuses (added in 0.2.0)", () => {
+    const raw = structuredClone(VALID);
+    raw.evidence[0].status = "flaky";
+    raw.evidence[0].browsers.chromium.status = "skipped";
+    const parsed = EvidenceManifestSchema.parse(raw);
+    expect(parsed.evidence[0].status).toBe("flaky");
+    expect(parsed.evidence[0].browsers.chromium?.status).toBe("skipped");
+  });
+
+  it("accepts an optional $schema field", () => {
+    const raw = { ...structuredClone(VALID), $schema: "./evidence-manifest.schema.json" };
+    const parsed = EvidenceManifestSchema.parse(raw);
+    expect(parsed.$schema).toBe("./evidence-manifest.schema.json");
+  });
+
+  it("rejects a missing id", () => {
     const bad = structuredClone(VALID);
-    delete (bad.evidence[0] as Record<string, unknown>).shows;
+    delete (bad.evidence[0] as Record<string, unknown>).id;
     expect(EvidenceManifestSchema.safeParse(bad).success).toBe(false);
   });
 
   it("rejects an invalid status", () => {
     const bad = structuredClone(VALID);
-    (bad.evidence[0] as Record<string, unknown>).status = "flaky";
+    (bad.evidence[0] as Record<string, unknown>).status = "exploded";
     expect(EvidenceManifestSchema.safeParse(bad).success).toBe(false);
   });
 
   it("rejects an invalid per-browser status", () => {
     const bad = structuredClone(VALID);
-    bad.evidence[0].browsers.chromium.status = "flaky" as never;
+    bad.evidence[0].browsers.chromium.status = "exploded" as never;
     expect(EvidenceManifestSchema.safeParse(bad).success).toBe(false);
   });
 });

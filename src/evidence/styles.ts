@@ -18,6 +18,9 @@ export const GALLERY_CSS = `.ev-gallery { font-family: inherit; }
 .ev-badge { display: inline-block; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; border-radius: 9999px; padding: 0.1rem 0.55rem; }
 .ev-badge-passed { background: #dcfce7; color: #166534; }
 .ev-badge-failed { background: #fee2e2; color: #991b1b; }
+.ev-badge-flaky { background: #fef3c7; color: #92400e; }
+.ev-badge-skipped { background: #e2e8f0; color: #475569; }
+.ev-badge-meta-missing { background: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1; }
 .ev-missing { color: #b91c1c; background: #fef2f2; border: 1px dashed #fca5a5; border-radius: 0.375rem; padding: 2rem 1rem; text-align: center; font-size: 0.85rem; width: 100%; }
 .ev-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
 .ev-modal[hidden] { display: none; }

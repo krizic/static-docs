@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "generatedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "shows": {
+            "type": "string",
+            "minLength": 1
+          },
+          "proves": {
+            "type": "string",
+            "minLength": 1
+          },
+          "spec": {
+            "type": "string"
+          },
+          "test": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "flaky",
+              "skipped"
+            ]
+          },
+          "browsers": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "passed",
+                    "failed",
+                    "flaky",
+                    "skipped"
+                  ]
+                }
+              },
+              "required": [
+                "file",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "browsers"
+        ],
+        "additionalProperties": {}
+      }
+    }
+  },
+  "required": [
+    "generatedAt",
+    "evidence"
+  ],
+  "additionalProperties": {}
+}

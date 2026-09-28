@@ -43,8 +43,28 @@ async function missingImages(
   return missing;
 }
 
-function badge(status: "passed" | "failed"): string {
+type EvidenceStatus = EvidenceEntry["status"];
+
+const STATUS_ORDER: EvidenceStatus[] = ["passed", "failed", "flaky", "skipped"];
+
+function badge(status: EvidenceStatus): string {
   return `<span class="ev-badge ev-badge-${status}">${status}</span>`;
+}
+
+/** Entries without annotations fall back to their id as the display title. */
+function entryTitle(entry: EvidenceEntry): string {
+  const title = entry.title ?? "";
+  return title.trim() ? title : entry.id;
+}
+
+function hasMetadata(entry: EvidenceEntry): boolean {
+  return Boolean(entry.title?.trim() || entry.shows?.trim() || entry.proves?.trim());
+}
+
+function metadataBadge(entry: EvidenceEntry): string {
+  return hasMetadata(entry)
+    ? ""
+    : `<span class="ev-badge ev-badge-meta-missing">Metadata missing</span>`;
 }
 
 function thumbHtml(file: string | undefined, missing: Set<string>, title: string): string {
@@ -56,17 +76,23 @@ function thumbHtml(file: string | undefined, missing: Set<string>, title: string
 }
 
 function cardHtml(entry: EvidenceEntry, missing: Set<string>): string {
+  const title = entryTitle(entry);
+  const shows = entry.shows?.trim() ? entry.shows : undefined;
   return `<button type="button" class="ev-card" data-ev-open="${esc(entry.id)}" data-status="${entry.status}">
-  <div class="ev-thumb">${thumbHtml(firstShotFile(entry), missing, entry.title)}</div>
+  <div class="ev-thumb">${thumbHtml(firstShotFile(entry), missing, title)}</div>
   <div class="ev-card-body">
-    <p class="ev-card-title">${esc(entry.title)}</p>
+    <p class="ev-card-title">${esc(title)}</p>
     ${badge(entry.status)}
-    <p class="ev-card-shows">${esc(entry.shows)}</p>
+    ${metadataBadge(entry)}
+    ${shows ? `<p class="ev-card-shows">${esc(shows)}</p>` : ""}
   </div>
 </button>`;
 }
 
 function modalHtml(entry: EvidenceEntry, missing: Set<string>): string {
+  const title = entryTitle(entry);
+  const shows = entry.shows?.trim() ? entry.shows : undefined;
+  const proves = entry.proves?.trim() ? entry.proves : undefined;
   const tabs = Object.entries(entry.browsers)
     .map(([name, shot], i) => {
       const miss = missing.has(shot.file) ? ' data-ev-missing="1"' : "";
@@ -74,24 +100,25 @@ function modalHtml(entry: EvidenceEntry, missing: Set<string>): string {
     })
     .join("\n    ");
   const refs = [
+    shows ? `<dt>Shows</dt><dd>${esc(shows)}</dd>` : "",
+    proves ? `<dt>Proves</dt><dd>${esc(proves)}</dd>` : "",
     entry.spec ? `<dt>Spec</dt><dd><code>${esc(entry.spec)}</code></dd>` : "",
     entry.test ? `<dt>Test</dt><dd>${esc(entry.test)}</dd>` : "",
   ].join("\n    ");
   return `<div class="ev-modal" data-ev-id="${esc(entry.id)}" hidden>
   <button type="button" class="ev-modal-backdrop" data-ev-close aria-label="Close"></button>
-  <div class="ev-modal-panel" role="dialog" aria-modal="true" aria-label="${esc(entry.title)}">
+  <div class="ev-modal-panel" role="dialog" aria-modal="true" aria-label="${esc(title)}">
     <div class="ev-modal-head">
-      <h2 class="ev-modal-title">${esc(entry.title)}</h2>
+      <h2 class="ev-modal-title">${esc(title)}</h2>
       <button type="button" class="ev-modal-close" data-ev-close aria-label="Close">&times;</button>
     </div>
     ${badge(entry.status)}
+    ${metadataBadge(entry)}
     <div class="ev-tabs">
     ${tabs}
     </div>
-    <div class="ev-modal-shot">${thumbHtml(firstShotFile(entry), missing, entry.title)}</div>
+    <div class="ev-modal-shot">${thumbHtml(firstShotFile(entry), missing, title)}</div>
     <dl class="ev-prose">
-    <dt>Shows</dt><dd>${esc(entry.shows)}</dd>
-    <dt>Proves</dt><dd>${esc(entry.proves)}</dd>
     ${refs}
     </dl>
     <div class="ev-modal-actions">
@@ -111,15 +138,23 @@ export async function renderEvidencePage(ctx: EvidencePageContext): Promise<stri
 
   const missing = await missingImages(spec.sourceDirAbs, spec.manifest);
   const entries = spec.manifest.evidence;
-  const passed = entries.filter((e) => e.status === "passed").length;
-  const failed = entries.length - passed;
+  const counts = new Map<EvidenceStatus, number>();
+  for (const e of entries) counts.set(e.status, (counts.get(e.status) ?? 0) + 1);
+  const count = (s: EvidenceStatus): number => counts.get(s) ?? 0;
+  // passed/failed stay visible for continuity; flaky/skipped appear when present.
+  const visible = STATUS_ORDER.filter((s) => count(s) > 0 || s === "passed" || s === "failed");
+  const summary = visible.map((s) => `<strong>${count(s)}</strong> ${s}`).join(" &middot; ");
+  const filters = ["all", ...visible]
+    .map(
+      (f) =>
+        `<button type="button" class="ev-filter${f === "all" ? " is-active" : ""}" data-ev-filter="${f}">${f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}</button>`,
+    )
+    .join("\n  ");
 
   const contentHtml = `<div class="ev-gallery">
-<p class="ev-summary"><strong>${entries.length}</strong> evidence &middot; <strong>${passed}</strong> passed &middot; <strong>${failed}</strong> failed &middot; generated <time datetime="${esc(spec.manifest.generatedAt)}">${esc(spec.manifest.generatedAt)}</time></p>
+<p class="ev-summary"><strong>${entries.length}</strong> evidence &middot; ${summary} &middot; generated <time datetime="${esc(spec.manifest.generatedAt)}">${esc(spec.manifest.generatedAt)}</time></p>
 <div class="ev-filters">
-  <button type="button" class="ev-filter is-active" data-ev-filter="all">All</button>
-  <button type="button" class="ev-filter" data-ev-filter="passed">Passed</button>
-  <button type="button" class="ev-filter" data-ev-filter="failed">Failed</button>
+  ${filters}
 </div>
 <div class="ev-grid">
 ${entries.map((e) => cardHtml(e, missing)).join("\n")}

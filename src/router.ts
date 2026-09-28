@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
 import type { ResolvedConfig } from "./config.js";
-import { loadEvidenceManifest } from "./evidence/manifest.js";
+import { EVIDENCE_MANIFEST_FILENAME, loadEvidenceManifest } from "./evidence/manifest.js";
 import { scanRepo } from "./scanner.js";
 import type { FileNode, Frontmatter } from "./types.js";
 import { exists } from "./utils/fs.js";
@@ -90,10 +90,12 @@ async function evidenceGalleryNodes(config: ResolvedConfig): Promise<FileNode[]>
   for (const g of config.evidenceGalleries ?? []) {
     const routePath = normalizeRoute(g.path);
     const sourceDirAbs = path.resolve(config.rootDir, g.source);
-    const manifest = await loadEvidenceManifest(path.join(sourceDirAbs, "manifest.json"));
+    const manifest = await loadEvidenceManifest(
+      path.join(sourceDirAbs, EVIDENCE_MANIFEST_FILENAME),
+    );
     nodes.push({
       sourcePath: "",
-      relativePath: `${path.relative(config.rootDir, sourceDirAbs).replace(/\\/g, "/")}/manifest.json`,
+      relativePath: `${path.relative(config.rootDir, sourceDirAbs).replace(/\\/g, "/")}/${EVIDENCE_MANIFEST_FILENAME}`,
       routePath,
       frontmatter: {
         title: g.title ?? defaultTitle(routePath),
