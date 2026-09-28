@@ -1,10 +1,10 @@
 # Repository Context: @krizic/static-docs
 
-_Generated: 2026-09-28T11:07:22.908Z_
+_Generated: 2026-09-28T14:22:07.729Z_
 
 ## Overview
 
-- **@krizic/static-docs** (package.json) — v0.1.5
+- **@krizic/static-docs** (package.json) — v0.2.0
   - Turn Markdown into a static documentation site.
   - scripts: build, dev, typecheck, test, check, check:fix, schema, docs, llm, prepare, prepublishOnly
 
@@ -35,6 +35,10 @@ _Generated: 2026-09-28T11:07:22.908Z_
 │   │   ├── mermaid.ts
 │   │   ├── meta.ts
 │   │   └── toc.ts
+│   ├── playwright/
+│   │   ├── index.ts
+│   │   ├── manifest-builder.ts
+│   │   └── reporter.ts
 │   ├── renderer/
 │   │   ├── layout.ts
 │   │   ├── page.ts
@@ -59,16 +63,23 @@ _Generated: 2026-09-28T11:07:22.908Z_
 │   ├── nav.ts
 │   ├── router.ts
 │   ├── scanner.ts
+│   ├── server.ts
 │   ├── theme.ts
 │   └── types.ts
 ├── tests/
 │   ├── evidence/
 │   │   └── manifest.test.ts
+│   ├── playwright/
+│   │   ├── manifest-builder.test.ts
+│   │   └── reporter.test.ts
 │   ├── build.test.ts
 │   ├── config.test.ts
-│   └── router.test.ts
+│   ├── router.test.ts
+│   ├── server-stream-error.test.ts
+│   └── server.test.ts
 ├── .gitignore
 ├── biome.json
+├── evidence-manifest.schema.json
 ├── lefthook.yml
 ├── LLM.md
 ├── package.json
@@ -264,6 +275,7 @@ docs/superpowers/
       "!dist",
       "!docs-build",
       "!schema.json",
+      "!evidence-manifest.schema.json",
       "!LLM.md",
       "!pnpm-lock.yaml"
     ]
@@ -601,6 +613,103 @@ sequenceDiagram
   diagrams stay 100% zero-JS.
 ```
 
+### evidence-manifest.schema.json
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "generatedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "shows": {
+            "type": "string",
+            "minLength": 1
+          },
+          "proves": {
+            "type": "string",
+            "minLength": 1
+          },
+          "spec": {
+            "type": "string"
+          },
+          "test": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "flaky",
+              "skipped"
+            ]
+          },
+          "browsers": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "passed",
+                    "failed",
+                    "flaky",
+                    "skipped"
+                  ]
+                }
+              },
+              "required": [
+                "file",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "browsers"
+        ],
+        "additionalProperties": {}
+      }
+    }
+  },
+  "required": [
+    "generatedAt",
+    "evidence"
+  ],
+  "additionalProperties": {}
+}
+```
+
 ### lefthook.yml
 
 ```yaml
@@ -632,7 +741,7 @@ pre-commit:
 ```json
 {
   "name": "@krizic/static-docs",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "Turn Markdown into a static documentation site.",
   "type": "module",
   "license": "MIT",
@@ -668,12 +777,23 @@ pre-commit:
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./playwright": {
+      "types": "./dist/playwright/index.d.ts",
+      "import": "./dist/playwright/index.js",
+      "default": "./dist/playwright/index.js"
+    },
+    "./playwright/reporter": {
+      "types": "./dist/playwright/reporter.d.ts",
+      "import": "./dist/playwright/reporter.js",
+      "default": "./dist/playwright/reporter.js"
     }
   },
   "files": [
     "dist",
     "src/themes",
     "schema.json",
+    "evidence-manifest.schema.json",
     "assets",
     "LLM.md"
   ],
@@ -692,6 +812,14 @@ pre-commit:
     "llm": "repo-context --out LLM.md",
     "prepare": "lefthook install",
     "prepublishOnly": "pnpm run build && pnpm run llm"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.40"
+  },
+  "peerDependenciesMeta": {
+    "@playwright/test": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.3.3",
@@ -720,6 +848,7 @@ pre-commit:
   "devDependencies": {
     "@biomejs/biome": "^2.5.13",
     "@krizic/repo-context": "^0.1.1",
+    "@playwright/test": "^1.63.0",
     "@types/hast": "^3.0.4",
     "@types/node": "^22.0.0",
     "lefthook": "^2.1.14",
@@ -790,13 +919,115 @@ Or run the live-reloading dev server:
 npx static-docs dev --port 4321
 ```
 
+## Previewing the built site
+
+The build output is plain static files, so any web server works. For a local
+preview without extra tooling:
+
+```bash
+npx static-docs serve            # serves outputDir from the config on :8080
+npx static-docs serve --port 9000 --dir ./dist-docs
+```
+
+`serve` reads `outputDir` and `basePath` from `static-docs.config.json`
+(`--dir` overrides the directory), redirects directory URLs to their
+canonical trailing-slash form, and refuses path traversal outside the served
+root. It exits with code 1 when there is nothing to serve, so it is safe to
+wire into scripts after a build.
+
 ## Commands
 
 | Command | Description |
 |---------|-------------|
 | `static-docs build` | Build the site into `outputDir`. |
 | `static-docs dev`   | Watch and serve with live reload. |
+| `static-docs serve` | Serve the built site over HTTP. |
 | `static-docs schema`| Emit a JSON Schema for the config file. |
+| `static-docs schema --manifest` | Emit a JSON Schema for the evidence manifest. |
+
+## Playwright evidence integration
+
+The optional `@krizic/static-docs/playwright` subpath turns verification
+screenshots into an evidence manifest for the gallery pages.
+`@playwright/test` is an optional peer dependency (`>=1.40`) — install it only
+in projects that use this integration.
+
+Register the reporter and annotate tests:
+
+```ts
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  reporter: [
+    ['list'],
+    ['@krizic/static-docs/playwright/reporter', { outputDir: 'e2e-screenshots' }],
+  ],
+});
+```
+
+```ts
+// specs/newsletter.spec.ts
+import { test } from '@playwright/test';
+import { addEvidence, saveEvidenceScreenshot } from '@krizic/static-docs/playwright';
+
+test('toggles a newsletter', async ({ page }, info) => {
+  addEvidence(info, {
+    title: 'Newsletter abonnieren',
+    shows: 'Der Newsletter-Tab',
+    proves: 'Toggle speichert den Status',
+  });
+  // ... interact with the page ...
+  await saveEvidenceScreenshot(page, info, 'newsletter', { dir: 'e2e-screenshots' });
+});
+```
+
+At the end of the run the reporter writes `e2e-screenshots/manifest.json`.
+The reporter's `outputDir` is resolved relative to Playwright's `rootDir` —
+the configured `testDir` when one is set, otherwise the directory containing
+the Playwright config file. In contrast, `saveEvidenceScreenshot`'s `dir`
+option is resolved against `process.cwd()`, so prefer passing an absolute
+path (e.g. via `path.resolve`) to stay independent of the directory the test
+runner was started from. Screenshot names must be unique across tests — the same name from several browser projects is
+aggregated into one entry, but the same name from two different tests fails
+the run with an error naming both tests. Tests without evidence screenshots
+are skipped.
+
+Statuses map from the Playwright outcome: expected → `passed`, flaky →
+`flaky`, skipped → `skipped`, unexpected → `failed`; an entry fails when any
+browser project of the test failed, even one that crashed before taking a
+screenshot.
+
+## Evidence manifest schema
+
+`manifest.json` contains `{ generatedAt, evidence: [...] }`. Each evidence
+entry has an `id`, a `status` (`passed`, `failed`, `flaky`, or `skipped`),
+and per-browser shots under `browsers`. The metadata fields `title`, `shows`,
+and `proves` are optional — entries without them render a "Metadata missing"
+badge in the gallery, and the card title falls back to the entry id.
+
+`static-docs schema --manifest` writes the JSON Schema for the format; the
+package also ships it as `evidence-manifest.schema.json`, so manifests can
+reference it via the optional `$schema` field.
+
+## Changelog
+
+### 0.2.0 (additive)
+
+- New `static-docs serve` command and programmatic `serve()` /
+  `createStaticHandler()` API for previewing the built site.
+- New `@krizic/static-docs/playwright` subpath (`addEvidence`,
+  `saveEvidenceScreenshot`, `buildEvidenceManifest`, `extractEvidenceMeta`)
+  and `@krizic/static-docs/playwright/reporter` default-exported reporter;
+  `@playwright/test` is an optional peer dependency.
+- Evidence manifest: `flaky` and `skipped` statuses, optional
+  `title`/`shows`/`proves`, optional `$schema`; the gallery renders distinct
+  badges and a "Metadata missing" badge. Old manifests remain valid.
+- New `EVIDENCE_MANIFEST_FILENAME` constant; `static-docs schema --manifest`;
+  the package ships `evidence-manifest.schema.json`.
+- Dev server hardening: encoded path traversal now answers 403, malformed
+  URLs 400 (instead of crashing), and directory URLs redirect to their
+  canonical trailing-slash form.
 
 ## Releasing
 
@@ -1332,6 +1563,8 @@ import { cac } from "cac";
 import { build } from "./builder.js";
 import { toJsonSchema } from "./config.js";
 import { dev } from "./dev.js";
+import { toEvidenceManifestJsonSchema } from "./evidence/manifest.js";
+import { serve } from "./server.js";
 
 const cli = cac("static-docs");
 
@@ -1365,11 +1598,32 @@ cli
   });
 
 cli
+  .command("serve", "Serve the built site over HTTP")
+  .option("--config <path>", "Path to config file", {
+    default: "static-docs.config.json",
+  })
+  .option("--port <port>", "Port", { default: 8080 })
+  .option("--dir <path>", "Directory to serve (overrides the config's outputDir)")
+  .action(async (options: { config: string; port: number; dir?: string }) => {
+    try {
+      await serve({ config: options.config, port: Number(options.port), dir: options.dir });
+    } catch (err) {
+      console.error(`[static-docs] ${(err as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+cli
   .command("schema", "Write JSON Schema for the config to schema.json")
-  .option("--out <path>", "Output path", { default: "schema.json" })
-  .action(async (options: { out: string }) => {
-    await writeFile(options.out, JSON.stringify(toJsonSchema(), null, 2));
-    console.log(`[static-docs] wrote ${options.out}`);
+  .option("--out <path>", "Output path")
+  .option("--manifest", "Emit the evidence manifest schema instead of the config schema", {
+    default: false,
+  })
+  .action(async (options: { out?: string; manifest?: boolean }) => {
+    const schema = options.manifest ? toEvidenceManifestJsonSchema() : toJsonSchema();
+    const out = options.out ?? (options.manifest ? "evidence-manifest.schema.json" : "schema.json");
+    await writeFile(out, JSON.stringify(schema, null, 2));
+    console.log(`[static-docs] wrote ${out}`);
   });
 
 cli.help();
@@ -1538,27 +1792,12 @@ export function toJsonSchema(): unknown {
 ### src/dev.ts
 
 ```typescript
-import { readFile } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 import chokidar from "chokidar";
 import { build } from "./builder.js";
 import { loadConfig } from "./config.js";
-import { exists } from "./utils/fs.js";
-
-const MIME: Record<string, string> = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".svg": "image/svg+xml",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".ico": "image/x-icon",
-  ".pdf": "application/pdf",
-};
+import { createStaticHandler } from "./server.js";
 
 const RELOAD_SNIPPET = `<script>
 (function(){var s=new EventSource("/__reload");s.onmessage=function(){location.reload()};})();
@@ -1578,8 +1817,16 @@ export async function dev(configPath = "static-docs.config.json", port = 4321): 
   }
   await rebuild();
 
-  const server = http.createServer(async (req, res) => {
+  const handler = createStaticHandler({
+    root: outDir,
+    basePath: config.basePath,
+    transformHtml: (html) => html.replace("</body>", `${RELOAD_SNIPPET}</body>`),
+  });
+
+  const server = http.createServer((req, res) => {
     const url = (req.url || "/").split("?")[0];
+    // Matched before basePath stripping: the injected snippet always requests
+    // "/__reload", regardless of the configured basePath.
     if (url === "/__reload") {
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
@@ -1591,26 +1838,7 @@ export async function dev(configPath = "static-docs.config.json", port = 4321): 
       req.on("close", () => clients.delete(res));
       return;
     }
-
-    let filePath = path.join(outDir, decodeURIComponent(url));
-    if (url.endsWith("/")) filePath = path.join(filePath, "index.html");
-    if (!(await exists(filePath))) {
-      const withIndex = path.join(filePath, "index.html");
-      if (await exists(withIndex)) filePath = withIndex;
-    }
-    if (!(await exists(filePath))) {
-      res.writeHead(404, { "Content-Type": "text/html" });
-      res.end("<h1>404 Not Found</h1>");
-      return;
-    }
-    const ext = path.extname(filePath).toLowerCase();
-    const type = MIME[ext] || "application/octet-stream";
-    let body: Buffer | string = await readFile(filePath);
-    if (ext === ".html") {
-      body = body.toString("utf8").replace("</body>", `${RELOAD_SNIPPET}</body>`);
-    }
-    res.writeHead(200, { "Content-Type": type });
-    res.end(body);
+    handler(req, res);
   });
 
   server.listen(port, () => {
@@ -1761,23 +1989,32 @@ export const GALLERY_JS = `(function () {
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
 
+/** Canonical file name of the evidence manifest inside a gallery source directory. */
+export const EVIDENCE_MANIFEST_FILENAME = "manifest.json";
+
+export const EvidenceStatusSchema = z.enum(["passed", "failed", "flaky", "skipped"]);
+
+export type EvidenceStatus = z.infer<typeof EvidenceStatusSchema>;
+
 export const BrowserShotSchema = z.object({
   file: z.string().min(1),
-  status: z.enum(["passed", "failed"]),
+  status: EvidenceStatusSchema,
 });
 
 export const EvidenceEntrySchema = z.looseObject({
   id: z.string().min(1),
-  title: z.string().min(1),
-  shows: z.string().min(1),
-  proves: z.string().min(1),
+  // Optional since 0.2.0: entries without annotations render a "Metadata missing" badge.
+  title: z.string().min(1).optional(),
+  shows: z.string().min(1).optional(),
+  proves: z.string().min(1).optional(),
   spec: z.string().optional(),
   test: z.string().optional(),
-  status: z.enum(["passed", "failed"]),
+  status: EvidenceStatusSchema,
   browsers: z.record(z.string(), BrowserShotSchema),
 });
 
 export const EvidenceManifestSchema = z.looseObject({
+  $schema: z.string().optional(),
   generatedAt: z.string().min(1),
   evidence: z.array(EvidenceEntrySchema),
 });
@@ -1785,6 +2022,11 @@ export const EvidenceManifestSchema = z.looseObject({
 export type BrowserShot = z.infer<typeof BrowserShotSchema>;
 export type EvidenceEntry = z.infer<typeof EvidenceEntrySchema>;
 export type EvidenceManifest = z.infer<typeof EvidenceManifestSchema>;
+
+/** JSON Schema (draft 2020-12) describing the evidence manifest format. */
+export function toEvidenceManifestJsonSchema(): unknown {
+  return z.toJSONSchema(EvidenceManifestSchema);
+}
 
 /** Load and validate an evidence manifest; throws with actionable messages. */
 export async function loadEvidenceManifest(manifestPath: string): Promise<EvidenceManifest> {
@@ -1865,8 +2107,28 @@ async function missingImages(
   return missing;
 }
 
-function badge(status: "passed" | "failed"): string {
+type EvidenceStatus = EvidenceEntry["status"];
+
+const STATUS_ORDER: EvidenceStatus[] = ["passed", "failed", "flaky", "skipped"];
+
+function badge(status: EvidenceStatus): string {
   return `<span class="ev-badge ev-badge-${status}">${status}</span>`;
+}
+
+/** Entries without annotations fall back to their id as the display title. */
+function entryTitle(entry: EvidenceEntry): string {
+  const title = entry.title ?? "";
+  return title.trim() ? title : entry.id;
+}
+
+function hasMetadata(entry: EvidenceEntry): boolean {
+  return Boolean(entry.title?.trim() || entry.shows?.trim() || entry.proves?.trim());
+}
+
+function metadataBadge(entry: EvidenceEntry): string {
+  return hasMetadata(entry)
+    ? ""
+    : `<span class="ev-badge ev-badge-meta-missing">Metadata missing</span>`;
 }
 
 function thumbHtml(file: string | undefined, missing: Set<string>, title: string): string {
@@ -1878,17 +2140,23 @@ function thumbHtml(file: string | undefined, missing: Set<string>, title: string
 }
 
 function cardHtml(entry: EvidenceEntry, missing: Set<string>): string {
+  const title = entryTitle(entry);
+  const shows = entry.shows?.trim() ? entry.shows : undefined;
   return `<button type="button" class="ev-card" data-ev-open="${esc(entry.id)}" data-status="${entry.status}">
-  <div class="ev-thumb">${thumbHtml(firstShotFile(entry), missing, entry.title)}</div>
+  <div class="ev-thumb">${thumbHtml(firstShotFile(entry), missing, title)}</div>
   <div class="ev-card-body">
-    <p class="ev-card-title">${esc(entry.title)}</p>
+    <p class="ev-card-title">${esc(title)}</p>
     ${badge(entry.status)}
-    <p class="ev-card-shows">${esc(entry.shows)}</p>
+    ${metadataBadge(entry)}
+    ${shows ? `<p class="ev-card-shows">${esc(shows)}</p>` : ""}
   </div>
 </button>`;
 }
 
 function modalHtml(entry: EvidenceEntry, missing: Set<string>): string {
+  const title = entryTitle(entry);
+  const shows = entry.shows?.trim() ? entry.shows : undefined;
+  const proves = entry.proves?.trim() ? entry.proves : undefined;
   const tabs = Object.entries(entry.browsers)
     .map(([name, shot], i) => {
       const miss = missing.has(shot.file) ? ' data-ev-missing="1"' : "";
@@ -1896,24 +2164,25 @@ function modalHtml(entry: EvidenceEntry, missing: Set<string>): string {
     })
     .join("\n    ");
   const refs = [
+    shows ? `<dt>Shows</dt><dd>${esc(shows)}</dd>` : "",
+    proves ? `<dt>Proves</dt><dd>${esc(proves)}</dd>` : "",
     entry.spec ? `<dt>Spec</dt><dd><code>${esc(entry.spec)}</code></dd>` : "",
     entry.test ? `<dt>Test</dt><dd>${esc(entry.test)}</dd>` : "",
   ].join("\n    ");
   return `<div class="ev-modal" data-ev-id="${esc(entry.id)}" hidden>
   <button type="button" class="ev-modal-backdrop" data-ev-close aria-label="Close"></button>
-  <div class="ev-modal-panel" role="dialog" aria-modal="true" aria-label="${esc(entry.title)}">
+  <div class="ev-modal-panel" role="dialog" aria-modal="true" aria-label="${esc(title)}">
     <div class="ev-modal-head">
-      <h2 class="ev-modal-title">${esc(entry.title)}</h2>
+      <h2 class="ev-modal-title">${esc(title)}</h2>
       <button type="button" class="ev-modal-close" data-ev-close aria-label="Close">&times;</button>
     </div>
     ${badge(entry.status)}
+    ${metadataBadge(entry)}
     <div class="ev-tabs">
     ${tabs}
     </div>
-    <div class="ev-modal-shot">${thumbHtml(firstShotFile(entry), missing, entry.title)}</div>
+    <div class="ev-modal-shot">${thumbHtml(firstShotFile(entry), missing, title)}</div>
     <dl class="ev-prose">
-    <dt>Shows</dt><dd>${esc(entry.shows)}</dd>
-    <dt>Proves</dt><dd>${esc(entry.proves)}</dd>
     ${refs}
     </dl>
     <div class="ev-modal-actions">
@@ -1933,15 +2202,23 @@ export async function renderEvidencePage(ctx: EvidencePageContext): Promise<stri
 
   const missing = await missingImages(spec.sourceDirAbs, spec.manifest);
   const entries = spec.manifest.evidence;
-  const passed = entries.filter((e) => e.status === "passed").length;
-  const failed = entries.length - passed;
+  const counts = new Map<EvidenceStatus, number>();
+  for (const e of entries) counts.set(e.status, (counts.get(e.status) ?? 0) + 1);
+  const count = (s: EvidenceStatus): number => counts.get(s) ?? 0;
+  // passed/failed stay visible for continuity; flaky/skipped appear when present.
+  const visible = STATUS_ORDER.filter((s) => count(s) > 0 || s === "passed" || s === "failed");
+  const summary = visible.map((s) => `<strong>${count(s)}</strong> ${s}`).join(" &middot; ");
+  const filters = ["all", ...visible]
+    .map(
+      (f) =>
+        `<button type="button" class="ev-filter${f === "all" ? " is-active" : ""}" data-ev-filter="${f}">${f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}</button>`,
+    )
+    .join("\n  ");
 
   const contentHtml = `<div class="ev-gallery">
-<p class="ev-summary"><strong>${entries.length}</strong> evidence &middot; <strong>${passed}</strong> passed &middot; <strong>${failed}</strong> failed &middot; generated <time datetime="${esc(spec.manifest.generatedAt)}">${esc(spec.manifest.generatedAt)}</time></p>
+<p class="ev-summary"><strong>${entries.length}</strong> evidence &middot; ${summary} &middot; generated <time datetime="${esc(spec.manifest.generatedAt)}">${esc(spec.manifest.generatedAt)}</time></p>
 <div class="ev-filters">
-  <button type="button" class="ev-filter is-active" data-ev-filter="all">All</button>
-  <button type="button" class="ev-filter" data-ev-filter="passed">Passed</button>
-  <button type="button" class="ev-filter" data-ev-filter="failed">Failed</button>
+  ${filters}
 </div>
 <div class="ev-grid">
 ${entries.map((e) => cardHtml(e, missing)).join("\n")}
@@ -1993,6 +2270,9 @@ export const GALLERY_CSS = `.ev-gallery { font-family: inherit; }
 .ev-badge { display: inline-block; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; border-radius: 9999px; padding: 0.1rem 0.55rem; }
 .ev-badge-passed { background: #dcfce7; color: #166534; }
 .ev-badge-failed { background: #fee2e2; color: #991b1b; }
+.ev-badge-flaky { background: #fef3c7; color: #92400e; }
+.ev-badge-skipped { background: #e2e8f0; color: #475569; }
+.ev-badge-meta-missing { background: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1; }
 .ev-missing { color: #b91c1c; background: #fef2f2; border: 1px dashed #fca5a5; border-radius: 0.375rem; padding: 2rem 1rem; text-align: center; font-size: 0.85rem; width: 100%; }
 .ev-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
 .ev-modal[hidden] { display: none; }
@@ -2030,14 +2310,24 @@ export type { BuildResult } from "./builder.js";
 export { build } from "./builder.js";
 export type { Config, ResolvedConfig } from "./config.js";
 export { ConfigSchema, loadConfig, toJsonSchema } from "./config.js";
-export type { BrowserShot, EvidenceEntry, EvidenceManifest } from "./evidence/manifest.js";
+export type {
+  BrowserShot,
+  EvidenceEntry,
+  EvidenceManifest,
+  EvidenceStatus,
+} from "./evidence/manifest.js";
 export {
   BrowserShotSchema,
+  EVIDENCE_MANIFEST_FILENAME,
   EvidenceEntrySchema,
   EvidenceManifestSchema,
+  EvidenceStatusSchema,
   loadEvidenceManifest,
+  toEvidenceManifestJsonSchema,
 } from "./evidence/manifest.js";
 export { resolveRoutes } from "./router.js";
+export type { ServeOptions, StaticHandlerOptions } from "./server.js";
+export { createStaticHandler, serve } from "./server.js";
 export type {
   ComponentSpec,
   FileNode,
@@ -2387,6 +2677,382 @@ export function nestToc(flat: TocEntry[]): TocEntry[] {
 }
 ```
 
+### src/playwright/index.ts
+
+```typescript
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+import type { Locator, Page, TestInfo } from "@playwright/test";
+import {
+  EVIDENCE_ANNOTATIONS,
+  EVIDENCE_ATTACHMENT_NAME,
+  type EvidenceMeta,
+} from "./manifest-builder.js";
+
+export * from "./manifest-builder.js";
+
+/**
+ * Declares evidence metadata for a test that produces verification
+ * screenshots. The annotations are picked up by the evidence reporter and
+ * merged into the evidence manifest.
+ */
+export function addEvidence(info: Pick<TestInfo, "annotations">, meta: EvidenceMeta): void {
+  const entries: [string, string | undefined][] = [
+    [EVIDENCE_ANNOTATIONS.title, meta.title],
+    [EVIDENCE_ANNOTATIONS.shows, meta.shows],
+    [EVIDENCE_ANNOTATIONS.proves, meta.proves],
+  ];
+  for (const [type, description] of entries) {
+    if (description) info.annotations.push({ type, description });
+  }
+}
+
+export interface EvidenceScreenshotOptions {
+  /** Directory the PNG is written into (created recursively). */
+  dir: string;
+  /** Capture the full scrollable page instead of just the viewport. Defaults to true. */
+  fullPage?: boolean;
+  /** Clip the screenshot to this element instead of the page. */
+  locator?: Locator;
+  /** Extra CSS injected before capturing, e.g. to hide flaky UI. */
+  style?: string;
+}
+
+const slug = (name: string): string =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+/**
+ * Saves `<slug(name)>-<slug(project)>.png` into `options.dir` and records it
+ * as a `static-docs-evidence` attachment so the evidence reporter can add it
+ * to the manifest.
+ *
+ * @returns The absolute path of the written file.
+ */
+export async function saveEvidenceScreenshot(
+  page: Page,
+  info: Pick<TestInfo, "annotations" | "attach" | "project" | "outputDir">,
+  name: string,
+  options: EvidenceScreenshotOptions,
+): Promise<string> {
+  await mkdir(options.dir, { recursive: true });
+
+  const safeName = slug(name);
+  // The unnamed default project gets a stable suffix, matching the reporter.
+  const projectSlug = slug(info.project.name) || "default";
+  const file = `${safeName}-${projectSlug}.png`;
+  const filePath = path.resolve(options.dir, file);
+
+  const shot = {
+    path: filePath,
+    animations: "disabled" as const,
+    ...(options.style ? { style: options.style } : {}),
+  };
+  if (options.locator) {
+    await options.locator.screenshot(shot);
+  } else {
+    await page.screenshot({ ...shot, fullPage: options.fullPage ?? true });
+  }
+
+  await info.attach(EVIDENCE_ATTACHMENT_NAME, {
+    body: JSON.stringify({ name: safeName, file }),
+    contentType: "application/json",
+  });
+
+  return filePath;
+}
+```
+
+### src/playwright/manifest-builder.ts
+
+```typescript
+import type { BrowserShot, EvidenceEntry, EvidenceManifest } from "../evidence/manifest.js";
+
+/** Annotation types used to declare evidence metadata on a Playwright test. */
+export const EVIDENCE_ANNOTATIONS = {
+  title: "evidence-title",
+  shows: "evidence-shows",
+  proves: "evidence-proves",
+} as const;
+
+/**
+ * Attachment name used to hand a written evidence screenshot from the test
+ * process to the reporter.
+ */
+export const EVIDENCE_ATTACHMENT_NAME = "static-docs-evidence";
+
+export type EvidenceMeta = Pick<EvidenceEntry, "title" | "shows" | "proves">;
+
+export type RunOutcome =
+  | "passed"
+  | "failed"
+  | "flaky"
+  | "skipped"
+  | "timedOut"
+  | "interrupted"
+  | "unknown";
+
+export interface EvidenceAnnotation {
+  type: string;
+  description?: string;
+}
+
+export interface EvidenceShot {
+  /** Sanitized screenshot name; becomes the evidence id in the manifest. */
+  name: string;
+  /** PNG file name relative to the output directory. */
+  file: string;
+}
+
+/**
+ * One Playwright test run (a single project/browser) with its evidence
+ * annotations and the screenshots it produced. Plain data, free of Playwright
+ * imports, so the builder stays unit-testable in Node.
+ */
+export interface EvidenceRun {
+  /** Identifies the logical test across browser projects, e.g. "spec.ts::title". */
+  logicalKey: string;
+  specFile: string;
+  testTitle: string;
+  /** Playwright project name, e.g. "chromium". */
+  browser: string;
+  outcome: RunOutcome;
+  annotations: EvidenceAnnotation[];
+  shots: EvidenceShot[];
+}
+
+const STATUS_RANK: Record<RunOutcome, number> = {
+  failed: 6,
+  timedOut: 5,
+  interrupted: 4,
+  flaky: 3,
+  unknown: 2,
+  passed: 1,
+  skipped: 0,
+};
+
+const worstOutcome = (outcomes: RunOutcome[]): RunOutcome =>
+  outcomes.reduce((worst, o) => (STATUS_RANK[o] > STATUS_RANK[worst] ? o : worst));
+
+type ManifestStatus = EvidenceEntry["status"];
+
+/** Conservative mapping: anything that is not known-good fails the entry. */
+const toManifestStatus = (outcome: RunOutcome): ManifestStatus => {
+  switch (outcome) {
+    case "passed":
+      return "passed";
+    case "flaky":
+      return "flaky";
+    case "skipped":
+      return "skipped";
+    default:
+      return "failed";
+  }
+};
+
+/** Reads the evidence annotations off a run; missing annotations yield empty strings. */
+export function extractEvidenceMeta(annotations: EvidenceAnnotation[]): EvidenceMeta {
+  const find = (type: string): string =>
+    annotations.find((a) => a.type === type)?.description?.trim() ?? "";
+  return {
+    title: find(EVIDENCE_ANNOTATIONS.title),
+    shows: find(EVIDENCE_ANNOTATIONS.shows),
+    proves: find(EVIDENCE_ANNOTATIONS.proves),
+  };
+}
+
+/**
+ * Builds an evidence manifest from collected runs. Screenshots are grouped by
+ * name across browser projects into one entry per name; the entry fails when
+ * any run of the logical test failed — including browser runs that crashed
+ * before taking a screenshot.
+ *
+ * @throws when the same screenshot name is produced by different tests.
+ */
+export function buildEvidenceManifest(runs: EvidenceRun[], generatedAt: string): EvidenceManifest {
+  const runsByLogicalKey = new Map<string, EvidenceRun[]>();
+  const producersByName = new Map<string, { run: EvidenceRun; file: string }[]>();
+  for (const run of runs) {
+    const list = runsByLogicalKey.get(run.logicalKey) ?? [];
+    list.push(run);
+    runsByLogicalKey.set(run.logicalKey, list);
+    for (const shot of run.shots) {
+      const producers = producersByName.get(shot.name) ?? [];
+      producers.push({ run, file: shot.file });
+      producersByName.set(shot.name, producers);
+    }
+  }
+
+  const evidence: EvidenceEntry[] = [];
+  for (const [name, producers] of producersByName) {
+    const producingTests = [...new Map(producers.map((p) => [p.run.logicalKey, p.run])).values()];
+    if (producingTests.length > 1) {
+      const names = producingTests.map((r) => `"${r.testTitle}" (${r.specFile})`).join(", ");
+      throw new Error(
+        `Screenshot name "${name}" is produced by ${producingTests.length} different tests: ${names}; names must be unique`,
+      );
+    }
+    const firstProducer = producers[0];
+    if (!firstProducer) continue;
+    const logicalKey = firstProducer.run.logicalKey;
+    const projectRuns = runsByLogicalKey.get(logicalKey) ?? [];
+    const first = projectRuns.find((r) => r.annotations.length > 0) ?? firstProducer.run;
+    const meta = extractEvidenceMeta(first.annotations);
+
+    const outcomeByBrowser = new Map<string, RunOutcome>();
+    for (const run of projectRuns) outcomeByBrowser.set(run.browser, run.outcome);
+    const browsers: Record<string, BrowserShot> = {};
+    for (const { run, file } of producers) {
+      outcomeByBrowser.set(run.browser, run.outcome);
+      browsers[run.browser] = { file, status: toManifestStatus(run.outcome) };
+    }
+
+    const outcomes = [...outcomeByBrowser.values()];
+    evidence.push({
+      id: name,
+      ...(meta.title ? { title: meta.title } : {}),
+      ...(meta.shows ? { shows: meta.shows } : {}),
+      ...(meta.proves ? { proves: meta.proves } : {}),
+      spec: first.specFile,
+      test: first.testTitle,
+      status: toManifestStatus(outcomes.length > 0 ? worstOutcome(outcomes) : "unknown"),
+      browsers: Object.fromEntries(Object.entries(browsers).sort(([a], [b]) => a.localeCompare(b))),
+    });
+  }
+
+  evidence.sort((a, b) => a.id.localeCompare(b.id));
+  return { generatedAt, evidence };
+}
+```
+
+### src/playwright/reporter.ts
+
+```typescript
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import type { FullConfig, Reporter, TestCase } from "@playwright/test/reporter";
+import { EVIDENCE_MANIFEST_FILENAME } from "../evidence/manifest.js";
+import {
+  buildEvidenceManifest,
+  EVIDENCE_ATTACHMENT_NAME,
+  type EvidenceAnnotation,
+  type EvidenceRun,
+  type EvidenceShot,
+  type RunOutcome,
+} from "./manifest-builder.js";
+
+export interface EvidenceReporterOptions {
+  /**
+   * Directory the evidence manifest is written to. Relative paths resolve
+   * against the Playwright `rootDir` (the directory containing the Playwright
+   * config file).
+   */
+  outputDir: string;
+}
+
+const mapOutcome = (outcome: ReturnType<TestCase["outcome"]>): RunOutcome => {
+  switch (outcome) {
+    case "expected":
+      return "passed";
+    case "flaky":
+      return "flaky";
+    case "skipped":
+      return "skipped";
+    default:
+      return "failed";
+  }
+};
+
+const dedupeAnnotations = (annotations: EvidenceAnnotation[]): EvidenceAnnotation[] => {
+  const seen = new Set<string>();
+  return annotations.filter((a) => {
+    const key = `${a.type}:${a.description ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const parseShot = (body: Buffer | string): EvidenceShot | undefined => {
+  try {
+    const parsed: unknown = JSON.parse(body.toString());
+    const shot = parsed as Partial<EvidenceShot> | null;
+    if (typeof shot?.name === "string" && typeof shot?.file === "string") {
+      return { name: shot.name, file: shot.file };
+    }
+  } catch {
+    // Malformed evidence attachments are ignored, not fatal.
+  }
+  return undefined;
+};
+
+/**
+ * Playwright reporter that collects `static-docs-evidence` attachments and
+ * evidence annotations, then writes `<outputDir>/manifest.json` at the end of
+ * the run. Tests without evidence screenshots are skipped. Register it as
+ * `['@krizic/static-docs/playwright/reporter', { outputDir: 'e2e-screenshots' }]`.
+ */
+export default class EvidenceReporter implements Reporter {
+  private readonly options: EvidenceReporterOptions;
+  private rootDir: string | undefined;
+  private runs = new Map<string, EvidenceRun>();
+
+  constructor(options: EvidenceReporterOptions) {
+    if (!options?.outputDir) {
+      throw new Error("[static-docs] evidence reporter requires an 'outputDir' option");
+    }
+    this.options = options;
+  }
+
+  onBegin(config: FullConfig): void {
+    this.rootDir = config.rootDir;
+    this.runs.clear();
+  }
+
+  // Fires after every attempt; the run record is rebuilt from all results so
+  // retries accumulate attachments and annotations instead of duplicating.
+  onTestEnd(test: TestCase): void {
+    // The default project has no name; give it a stable browser key.
+    const projectName = test.parent.project()?.name || "default";
+    const key = `${test.id}::${projectName}`;
+    // Spec paths are stored relative to the rootDir, like the JSON report.
+    const specFile = path.relative(this.rootDir ?? process.cwd(), test.location.file);
+
+    const shots = new Map<string, EvidenceShot>();
+    const annotations: EvidenceAnnotation[] = [...test.annotations];
+    for (const result of test.results) {
+      annotations.push(...result.annotations);
+      for (const attachment of result.attachments) {
+        if (attachment.name !== EVIDENCE_ATTACHMENT_NAME || !attachment.body) continue;
+        const shot = parseShot(attachment.body);
+        if (shot) shots.set(shot.name, shot);
+      }
+    }
+
+    this.runs.set(key, {
+      logicalKey: `${specFile}::${test.title}`,
+      specFile,
+      testTitle: test.title,
+      browser: projectName,
+      outcome: mapOutcome(test.outcome()),
+      annotations: dedupeAnnotations(annotations),
+      shots: [...shots.values()],
+    });
+  }
+
+  async onEnd(): Promise<void> {
+    const manifest = buildEvidenceManifest([...this.runs.values()], new Date().toISOString());
+    const outDir = path.resolve(this.rootDir ?? process.cwd(), this.options.outputDir);
+    await mkdir(outDir, { recursive: true });
+    const manifestPath = path.join(outDir, EVIDENCE_MANIFEST_FILENAME);
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+    console.log(`[static-docs] wrote ${manifestPath} (${manifest.evidence.length} evidence)`);
+  }
+}
+```
+
 ### src/renderer/layout.ts
 
 ```typescript
@@ -2664,7 +3330,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
 import type { ResolvedConfig } from "./config.js";
-import { loadEvidenceManifest } from "./evidence/manifest.js";
+import { EVIDENCE_MANIFEST_FILENAME, loadEvidenceManifest } from "./evidence/manifest.js";
 import { scanRepo } from "./scanner.js";
 import type { FileNode, Frontmatter } from "./types.js";
 import { exists } from "./utils/fs.js";
@@ -2752,10 +3418,12 @@ async function evidenceGalleryNodes(config: ResolvedConfig): Promise<FileNode[]>
   for (const g of config.evidenceGalleries ?? []) {
     const routePath = normalizeRoute(g.path);
     const sourceDirAbs = path.resolve(config.rootDir, g.source);
-    const manifest = await loadEvidenceManifest(path.join(sourceDirAbs, "manifest.json"));
+    const manifest = await loadEvidenceManifest(
+      path.join(sourceDirAbs, EVIDENCE_MANIFEST_FILENAME),
+    );
     nodes.push({
       sourcePath: "",
-      relativePath: `${path.relative(config.rootDir, sourceDirAbs).replace(/\\/g, "/")}/manifest.json`,
+      relativePath: `${path.relative(config.rootDir, sourceDirAbs).replace(/\\/g, "/")}/${EVIDENCE_MANIFEST_FILENAME}`,
       routePath,
       frontmatter: {
         title: g.title ?? defaultTitle(routePath),
@@ -2838,6 +3506,231 @@ async function readFrontmatter(file: string): Promise<Frontmatter> {
   const raw = await readFile(file, "utf8");
   const { data } = matter(raw);
   return data as Frontmatter;
+}
+```
+
+### src/server.ts
+
+```typescript
+import { createReadStream } from "node:fs";
+import { readFile, stat } from "node:fs/promises";
+import http from "node:http";
+import path from "node:path";
+import { loadConfig } from "./config.js";
+import { exists } from "./utils/fs.js";
+
+const MIME: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".map": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".woff2": "font/woff2",
+  ".pdf": "application/pdf",
+};
+
+export interface StaticHandlerOptions {
+  /** Directory to serve; resolved to an absolute path. */
+  root: string;
+  /**
+   * URL prefix to strip before resolving, e.g. "/docs" for a site built with
+   * `basePath: "/docs"`. Requests without the prefix are served as-is.
+   */
+  basePath?: string;
+  /** Transform applied to every served HTML document (e.g. live-reload injection). */
+  transformHtml?: (html: string) => string;
+}
+
+function normalizeBasePath(basePath: string | undefined): string | undefined {
+  if (!basePath) return undefined;
+  const clean = basePath.replace(/\/+$/g, "");
+  return clean === "" || clean === "/" ? undefined : clean;
+}
+
+/**
+ * Builds the canonical directory URL for a resolved directory. The location is
+ * derived from the resolved filesystem path rather than echoed back from the
+ * request, so it always stays a single-slash, same-origin path.
+ */
+function directoryLocation(
+  root: string,
+  basePath: string | undefined,
+  candidate: string,
+  query: string | undefined,
+): string {
+  const rel = path.relative(root, candidate);
+  const p = rel === "" ? "/" : `/${rel.split(path.sep).map(encodeURIComponent).join("/")}/`;
+  const withBase = basePath ? `${basePath}${p}` : p;
+  return query ? `${withBase}?${query}` : withBase;
+}
+
+type ResolvedRequest = { file: string } | { redirect: string } | { status: 400 | 403 | 404 };
+
+/**
+ * Resolves a request path to a file to serve, a redirect to perform, or an
+ * error status. Escapes above `root` (path traversal) yield 403, malformed
+ * percent-encoding yields 400, and missing files yield 404.
+ */
+async function resolveRequest(
+  root: string,
+  basePath: string | undefined,
+  url: string,
+): Promise<ResolvedRequest> {
+  const [rawPath = "/", query] = url.split("?");
+
+  let urlPath = rawPath;
+  if (basePath) {
+    if (urlPath === basePath) urlPath = "/";
+    else if (urlPath.startsWith(`${basePath}/`)) urlPath = urlPath.slice(basePath.length);
+  }
+
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(urlPath);
+  } catch {
+    return { status: 400 };
+  }
+
+  const candidate = path.resolve(root, `.${decoded}`);
+  if (candidate !== root && !candidate.startsWith(root + path.sep)) {
+    return { status: 403 };
+  }
+
+  const stats = await stat(candidate).catch(() => null);
+  if (!stats) return { status: 404 };
+
+  if (stats.isDirectory()) {
+    const indexFile = path.join(candidate, "index.html");
+    if (!(await exists(indexFile))) return { status: 404 };
+
+    // Directories must be requested with a trailing slash. Pages load assets
+    // relatively, which the browser resolves against the parent directory when
+    // the slash is missing, producing 404s. Every conventional static host
+    // redirects here, so mirror that behaviour.
+    if (!rawPath.endsWith("/")) {
+      return { redirect: directoryLocation(root, basePath, candidate, query) };
+    }
+    return { file: indexFile };
+  }
+
+  return { file: candidate };
+}
+
+/**
+ * Serves a directory of static files over HTTP with path-traversal
+ * containment, canonical directory redirects, and optional HTML transforms.
+ * All errors are answered with a response; the handler never throws.
+ */
+export function createStaticHandler(options: StaticHandlerOptions): http.RequestListener {
+  const root = path.resolve(options.root);
+  const basePath = normalizeBasePath(options.basePath);
+
+  const handle = async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
+    const method = req.method ?? "GET";
+    if (method !== "GET" && method !== "HEAD") {
+      res.writeHead(405, {
+        "Content-Type": "text/plain; charset=utf-8",
+        Allow: "GET, HEAD",
+      });
+      res.end("405 Method Not Allowed");
+      return;
+    }
+    const isHead = method === "HEAD";
+
+    const resolved = await resolveRequest(root, basePath, req.url ?? "/");
+
+    if ("status" in resolved) {
+      const message = http.STATUS_CODES[resolved.status] ?? "Error";
+      res.writeHead(resolved.status, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end(isHead ? undefined : `${resolved.status} ${message}`);
+      return;
+    }
+
+    // 302 rather than 301: a permanent redirect would be cached by the browser
+    // and outlive any change to the generated site.
+    if ("redirect" in resolved) {
+      res.writeHead(302, { Location: resolved.redirect });
+      res.end();
+      return;
+    }
+
+    const ext = path.extname(resolved.file).toLowerCase();
+    const type = MIME[ext] ?? "application/octet-stream";
+    res.writeHead(200, { "Content-Type": type });
+    if (isHead) {
+      res.end();
+      return;
+    }
+    if (ext === ".html" && options.transformHtml) {
+      const html = await readFile(resolved.file, "utf8");
+      res.end(options.transformHtml(html));
+      return;
+    }
+    const stream = createReadStream(resolved.file);
+    // The file can vanish between stat and open (e.g. a dev rebuild rm -rf's
+    // the output dir). Headers are already sent at that point, so the only
+    // sane answer is to abort the response instead of crashing the process.
+    stream.on("error", () => res.destroy());
+    stream.pipe(res);
+  };
+
+  return (req, res) => {
+    handle(req, res).catch((err) => {
+      if (!res.headersSent) {
+        res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
+      }
+      res.end(`500 Internal Server Error: ${(err as Error).message}`);
+    });
+  };
+}
+
+export interface ServeOptions {
+  /** Path to the config file; used to resolve outputDir and basePath. */
+  config?: string;
+  /** Port to listen on. Defaults to 8080. */
+  port?: number;
+  /** Directory to serve; overrides the config's outputDir when set. */
+  dir?: string;
+}
+
+/**
+ * Serves the built site (or an explicit directory) over HTTP. Throws a clear
+ * error when there is nothing to serve.
+ */
+export async function serve(options: ServeOptions = {}): Promise<http.Server> {
+  let root: string;
+  let basePath: string | undefined;
+  if (options.dir) {
+    root = path.resolve(options.dir);
+  } else {
+    const config = await loadConfig(options.config ?? "static-docs.config.json");
+    root = config.outputDirAbs;
+    basePath = config.basePath;
+  }
+  if (!(await exists(root))) {
+    throw new Error(`Nothing to serve: ${root} does not exist. Run "static-docs build" first.`);
+  }
+
+  const port = options.port ?? 8080;
+  const server = http.createServer(createStaticHandler({ root, basePath }));
+  await new Promise<void>((resolvePromise, reject) => {
+    server.once("error", reject);
+    server.listen(port, () => {
+      server.off("error", reject);
+      resolvePromise();
+    });
+  });
+  console.log(`[static-docs] serving ${root}`);
+  console.log(`[static-docs] → http://localhost:${port}`);
+  return server;
 }
 ```
 
@@ -3630,21 +4523,54 @@ describe("EvidenceManifestSchema", () => {
     expect((parsed.evidence[0] as Record<string, unknown>).metadata).toBe("present");
   });
 
-  it("rejects a missing required field", () => {
+  it("accepts a 0.1.5 manifest unchanged", () => {
+    const parsed = EvidenceManifestSchema.parse(structuredClone(VALID));
+    expect(parsed.evidence[0].title).toBe("Authentifizierte Dokumentliste");
+    expect(parsed.evidence[0].status).toBe("passed");
+    expect(parsed.evidence[0].browsers.firefox?.status).toBe("failed");
+  });
+
+  it("accepts entries without title/shows/proves (optional since 0.2.0)", () => {
+    const raw = structuredClone(VALID);
+    const entry = raw.evidence[0] as Record<string, unknown>;
+    delete entry.title;
+    delete entry.shows;
+    delete entry.proves;
+    const parsed = EvidenceManifestSchema.parse(raw);
+    expect(parsed.evidence[0].id).toBe("authenticated-list");
+    expect(parsed.evidence[0].title).toBeUndefined();
+  });
+
+  it("accepts flaky and skipped statuses (added in 0.2.0)", () => {
+    const raw = structuredClone(VALID);
+    raw.evidence[0].status = "flaky";
+    raw.evidence[0].browsers.chromium.status = "skipped";
+    const parsed = EvidenceManifestSchema.parse(raw);
+    expect(parsed.evidence[0].status).toBe("flaky");
+    expect(parsed.evidence[0].browsers.chromium?.status).toBe("skipped");
+  });
+
+  it("accepts an optional $schema field", () => {
+    const raw = { ...structuredClone(VALID), $schema: "./evidence-manifest.schema.json" };
+    const parsed = EvidenceManifestSchema.parse(raw);
+    expect(parsed.$schema).toBe("./evidence-manifest.schema.json");
+  });
+
+  it("rejects a missing id", () => {
     const bad = structuredClone(VALID);
-    delete (bad.evidence[0] as Record<string, unknown>).shows;
+    delete (bad.evidence[0] as Record<string, unknown>).id;
     expect(EvidenceManifestSchema.safeParse(bad).success).toBe(false);
   });
 
   it("rejects an invalid status", () => {
     const bad = structuredClone(VALID);
-    (bad.evidence[0] as Record<string, unknown>).status = "flaky";
+    (bad.evidence[0] as Record<string, unknown>).status = "exploded";
     expect(EvidenceManifestSchema.safeParse(bad).success).toBe(false);
   });
 
   it("rejects an invalid per-browser status", () => {
     const bad = structuredClone(VALID);
-    bad.evidence[0].browsers.chromium.status = "flaky" as never;
+    bad.evidence[0].browsers.chromium.status = "exploded" as never;
     expect(EvidenceManifestSchema.safeParse(bad).success).toBe(false);
   });
 });
@@ -3687,6 +4613,403 @@ describe("loadEvidenceManifest", () => {
     await expect(loadEvidenceManifest(p)).rejects.toThrow(
       'duplicate evidence id "authenticated-list"',
     );
+  });
+});
+```
+
+### tests/playwright/manifest-builder.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import {
+  buildEvidenceManifest,
+  EVIDENCE_ANNOTATIONS,
+  type EvidenceRun,
+  extractEvidenceMeta,
+} from "../../src/playwright/manifest-builder.js";
+
+const GENERATED_AT = "2026-09-28T00:00:00.000Z";
+const SPEC_FILE = "specs/newsletter.spec.ts";
+
+const ANNOTATIONS = [
+  { type: EVIDENCE_ANNOTATIONS.title, description: "Newsletter abonnieren" },
+  { type: EVIDENCE_ANNOTATIONS.shows, description: "Der Newsletter-Tab" },
+  { type: EVIDENCE_ANNOTATIONS.proves, description: "Toggle speichert den Status" },
+];
+
+function run(overrides: Partial<EvidenceRun>): EvidenceRun {
+  return {
+    logicalKey: `${SPEC_FILE}::toggles a newsletter`,
+    specFile: SPEC_FILE,
+    testTitle: "toggles a newsletter",
+    browser: "chromium",
+    outcome: "passed",
+    annotations: ANNOTATIONS,
+    shots: [],
+    ...overrides,
+  };
+}
+
+describe("extractEvidenceMeta", () => {
+  it("extracts the three evidence annotations", () => {
+    expect(extractEvidenceMeta(ANNOTATIONS)).toEqual({
+      title: "Newsletter abonnieren",
+      shows: "Der Newsletter-Tab",
+      proves: "Toggle speichert den Status",
+    });
+  });
+
+  it("returns empty strings when metadata is missing", () => {
+    expect(extractEvidenceMeta([{ type: "unrelated", description: "x" }])).toEqual({
+      title: "",
+      shows: "",
+      proves: "",
+    });
+  });
+});
+
+describe("buildEvidenceManifest", () => {
+  it("fails the entry when another browser run of the same test fails", () => {
+    const manifest = buildEvidenceManifest(
+      [
+        run({ shots: [{ name: "newsletter", file: "newsletter-chromium.png" }] }),
+        run({ browser: "firefox", outcome: "failed" }),
+      ],
+      GENERATED_AT,
+    );
+
+    expect(manifest.evidence).toHaveLength(1);
+    const entry = manifest.evidence[0];
+    expect(entry.id).toBe("newsletter");
+    expect(entry.title).toBe("Newsletter abonnieren");
+    expect(entry.spec).toBe(SPEC_FILE);
+    expect(entry.test).toBe("toggles a newsletter");
+    expect(entry.status).toBe("failed");
+    expect(entry.browsers.chromium).toEqual({
+      file: "newsletter-chromium.png",
+      status: "passed",
+    });
+    expect(entry.browsers.firefox).toBeUndefined();
+  });
+
+  it("aggregates screenshots of the same name across browser projects", () => {
+    const manifest = buildEvidenceManifest(
+      [
+        run({ shots: [{ name: "a", file: "a-chromium.png" }] }),
+        run({
+          browser: "firefox",
+          shots: [{ name: "a", file: "a-firefox.png" }],
+        }),
+      ],
+      GENERATED_AT,
+    );
+
+    expect(manifest.evidence).toHaveLength(1);
+    const entry = manifest.evidence[0];
+    expect(entry.status).toBe("passed");
+    expect(Object.keys(entry.browsers)).toEqual(["chromium", "firefox"]);
+  });
+
+  it("omits metadata fields when the test has no evidence annotations", () => {
+    const manifest = buildEvidenceManifest(
+      [run({ annotations: [], shots: [{ name: "a", file: "a-chromium.png" }] })],
+      GENERATED_AT,
+    );
+    const entry = manifest.evidence[0];
+    expect("title" in entry).toBe(false);
+    expect("shows" in entry).toBe(false);
+    expect("proves" in entry).toBe(false);
+  });
+
+  it("throws naming both tests when a name is produced by two tests", () => {
+    expect(() =>
+      buildEvidenceManifest(
+        [
+          run({ shots: [{ name: "x", file: "x-chromium.png" }] }),
+          run({
+            logicalKey: "specs/other.spec.ts::renders other state",
+            specFile: "specs/other.spec.ts",
+            testTitle: "renders other state",
+            browser: "firefox",
+            shots: [{ name: "x", file: "x-firefox.png" }],
+          }),
+        ],
+        GENERATED_AT,
+      ),
+    ).toThrow(
+      'Screenshot name "x" is produced by 2 different tests: ' +
+        `"toggles a newsletter" (${SPEC_FILE}), "renders other state" (specs/other.spec.ts)`,
+    );
+  });
+
+  it("maps outcomes to manifest statuses", () => {
+    const cases: Array<[EvidenceRun["outcome"], string]> = [
+      ["passed", "passed"],
+      ["flaky", "flaky"],
+      ["skipped", "skipped"],
+      ["timedOut", "failed"],
+      ["interrupted", "failed"],
+      ["unknown", "failed"],
+      ["failed", "failed"],
+    ];
+    for (const [outcome, status] of cases) {
+      const manifest = buildEvidenceManifest(
+        [run({ outcome, shots: [{ name: "a", file: "a-chromium.png" }] })],
+        GENERATED_AT,
+      );
+      expect(manifest.evidence[0]?.status).toBe(status);
+      expect(manifest.evidence[0]?.browsers.chromium?.status).toBe(status);
+    }
+  });
+
+  it("marks the worst outcome across browser runs as the entry status", () => {
+    const manifest = buildEvidenceManifest(
+      [
+        run({ shots: [{ name: "a", file: "a-chromium.png" }] }),
+        run({ browser: "firefox", outcome: "flaky" }),
+      ],
+      GENERATED_AT,
+    );
+    expect(manifest.evidence[0]?.status).toBe("flaky");
+  });
+
+  it("sorts entries by id and browsers by name", () => {
+    const manifest = buildEvidenceManifest(
+      [
+        run({ shots: [{ name: "b", file: "b-webkit.png" }], browser: "webkit" }),
+        run({ shots: [{ name: "b", file: "b-chromium.png" }] }),
+        run({
+          logicalKey: "specs/other.spec.ts::a test",
+          specFile: "specs/other.spec.ts",
+          testTitle: "a test",
+          shots: [{ name: "a", file: "a-chromium.png" }],
+        }),
+      ],
+      GENERATED_AT,
+    );
+    expect(manifest.evidence.map((e) => e.id)).toEqual(["a", "b"]);
+    expect(Object.keys(manifest.evidence[1]?.browsers ?? {})).toEqual(["chromium", "webkit"]);
+  });
+
+  it("produces an empty manifest when no run took screenshots", () => {
+    const manifest = buildEvidenceManifest([run({})], GENERATED_AT);
+    expect(manifest).toEqual({ generatedAt: GENERATED_AT, evidence: [] });
+  });
+});
+```
+
+### tests/playwright/reporter.test.ts
+
+```typescript
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import type { FullConfig, TestCase, TestResult } from "@playwright/test/reporter";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { type EvidenceManifest, EvidenceManifestSchema } from "../../src/evidence/manifest.js";
+import EvidenceReporter from "../../src/playwright/reporter.js";
+
+const SPEC_FILE = "specs/newsletter.spec.ts";
+
+const ANNOTATIONS = [
+  { type: "evidence-title", description: "Newsletter abonnieren" },
+  { type: "evidence-shows", description: "Der Newsletter-Tab" },
+  { type: "evidence-proves", description: "Toggle speichert den Status" },
+];
+
+type FakeOutcome = ReturnType<TestCase["outcome"]>;
+
+function evidenceAttachment(name: string, file: string): TestResult["attachments"][number] {
+  return {
+    name: "static-docs-evidence",
+    contentType: "application/json",
+    body: Buffer.from(JSON.stringify({ name, file })),
+  } as TestResult["attachments"][number];
+}
+
+function fakeResult(overrides: Partial<TestResult>): TestResult {
+  return { attachments: [], annotations: [], ...overrides } as TestResult;
+}
+
+function fakeTestCase(options: {
+  id?: string;
+  title?: string;
+  file: string;
+  project?: string;
+  outcome: FakeOutcome;
+  results: TestResult[];
+  annotations?: TestCase["annotations"];
+}): TestCase {
+  const projectName = options.project;
+  const test = {
+    id: options.id ?? "t1",
+    title: options.title ?? "toggles a newsletter",
+    location: { file: options.file, line: 1, column: 1 },
+    parent: { project: () => (projectName === undefined ? undefined : { name: projectName }) },
+    annotations: options.annotations ?? [],
+    results: options.results,
+    outcome: () => options.outcome,
+  };
+  return test as unknown as TestCase;
+}
+
+describe("EvidenceReporter", () => {
+  let rootDir: string;
+  beforeEach(async () => {
+    rootDir = await mkdtemp(path.join(tmpdir(), "static-docs-reporter-"));
+  });
+  afterEach(async () => {
+    await rm(rootDir, { recursive: true, force: true });
+  });
+
+  async function runReporter(tests: TestCase[]): Promise<EvidenceManifest> {
+    const reporter = new EvidenceReporter({ outputDir: "out" });
+    reporter.onBegin({ rootDir } as FullConfig);
+    for (const test of tests) reporter.onTestEnd(test);
+    await reporter.onEnd();
+    const raw = JSON.parse(await readFile(path.join(rootDir, "out", "manifest.json"), "utf8"));
+    return EvidenceManifestSchema.parse(raw);
+  }
+
+  /** Test file paths are absolute in Playwright; the reporter relativizes them. */
+  const specFile = (rel = SPEC_FILE): string => path.join(rootDir, rel);
+
+  it("writes a manifest that passes EvidenceManifestSchema", async () => {
+    const manifest = await runReporter([
+      fakeTestCase({
+        file: specFile(),
+        project: "chromium",
+        outcome: "expected",
+        results: [
+          fakeResult({
+            annotations: ANNOTATIONS,
+            attachments: [evidenceAttachment("newsletter", "newsletter-chromium.png")],
+          }),
+        ],
+      }),
+    ]);
+
+    expect(manifest.evidence).toHaveLength(1);
+    const entry = manifest.evidence[0];
+    expect(entry.id).toBe("newsletter");
+    expect(entry.title).toBe("Newsletter abonnieren");
+    expect(entry.spec).toBe(SPEC_FILE);
+    expect(entry.status).toBe("passed");
+    expect(entry.browsers.chromium).toEqual({
+      file: "newsletter-chromium.png",
+      status: "passed",
+    });
+  });
+
+  it('uses "default" as the browser key for the unnamed default project', async () => {
+    const manifest = await runReporter([
+      fakeTestCase({
+        file: specFile(),
+        outcome: "expected",
+        results: [fakeResult({ attachments: [evidenceAttachment("a", "a.png")] })],
+      }),
+    ]);
+    expect(Object.keys(manifest.evidence[0]?.browsers ?? {})).toEqual(["default"]);
+  });
+
+  it("maps outcomes: expected→passed, flaky→flaky, skipped→skipped, unexpected→failed", async () => {
+    const cases: Array<[FakeOutcome, string]> = [
+      ["expected", "passed"],
+      ["flaky", "flaky"],
+      ["skipped", "skipped"],
+      ["unexpected", "failed"],
+    ];
+    for (const [outcome, status] of cases) {
+      const manifest = await runReporter([
+        fakeTestCase({
+          file: specFile(),
+          project: "chromium",
+          outcome,
+          results: [fakeResult({ attachments: [evidenceAttachment("a", "a-chromium.png")] })],
+        }),
+      ]);
+      expect(manifest.evidence[0]?.status).toBe(status);
+    }
+  });
+
+  it("collects attachments and annotations across retries", async () => {
+    const manifest = await runReporter([
+      fakeTestCase({
+        file: specFile(),
+        project: "chromium",
+        outcome: "flaky",
+        results: [
+          fakeResult({
+            attachments: [evidenceAttachment("a", "a-chromium.png")],
+          }),
+          fakeResult({
+            annotations: ANNOTATIONS,
+            attachments: [evidenceAttachment("a", "a-chromium.png")],
+          }),
+        ],
+      }),
+    ]);
+
+    const entry = manifest.evidence[0];
+    expect(entry.status).toBe("flaky");
+    expect(entry.title).toBe("Newsletter abonnieren");
+    expect(Object.keys(entry.browsers)).toEqual(["chromium"]);
+  });
+
+  it("skips tests without evidence screenshots", async () => {
+    const manifest = await runReporter([
+      fakeTestCase({
+        file: specFile(),
+        project: "chromium",
+        outcome: "expected",
+        results: [fakeResult({})],
+      }),
+    ]);
+    expect(manifest.evidence).toEqual([]);
+  });
+
+  it("aggregates browser projects under one entry", async () => {
+    const manifest = await runReporter([
+      fakeTestCase({
+        id: "abc-chromium",
+        file: specFile(),
+        project: "chromium",
+        outcome: "expected",
+        results: [fakeResult({ attachments: [evidenceAttachment("a", "a-chromium.png")] })],
+      }),
+      fakeTestCase({
+        id: "abc-firefox",
+        file: specFile(),
+        project: "firefox",
+        outcome: "unexpected",
+        results: [fakeResult({ attachments: [evidenceAttachment("a", "a-firefox.png")] })],
+      }),
+    ]);
+
+    expect(manifest.evidence).toHaveLength(1);
+    expect(manifest.evidence[0]?.status).toBe("failed");
+    expect(Object.keys(manifest.evidence[0]?.browsers ?? {})).toEqual(["chromium", "firefox"]);
+  });
+
+  it("throws when two tests produce the same screenshot name", async () => {
+    await expect(
+      runReporter([
+        fakeTestCase({
+          file: specFile(),
+          project: "chromium",
+          outcome: "expected",
+          results: [fakeResult({ attachments: [evidenceAttachment("x", "x-chromium.png")] })],
+        }),
+        fakeTestCase({
+          id: "t2",
+          title: "renders other state",
+          file: specFile("specs/other.spec.ts"),
+          project: "chromium",
+          outcome: "expected",
+          results: [fakeResult({ attachments: [evidenceAttachment("x", "x-chromium.png")] })],
+        }),
+      ]),
+    ).rejects.toThrow('Screenshot name "x" is produced by 2 different tests');
   });
 });
 ```
@@ -3779,6 +5102,235 @@ describe("resolveRoutes with evidenceGalleries", () => {
 });
 ```
 
+### tests/server-stream-error.test.ts
+
+```typescript
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import http from "node:http";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { Readable } from "node:stream";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Simulate the stat/open race: `stat` (fs/promises, unmocked) still sees the
+// file, but by the time the handler opens a read stream the file is gone
+// (e.g. a dev rebuild rm -rf's the output dir). Only the file named
+// "vanished.txt" fails; everything else streams normally.
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return {
+    ...actual,
+    createReadStream: ((file: unknown) => {
+      if (String(file).endsWith("vanished.txt")) {
+        return new Readable({
+          read() {
+            this.destroy(new Error("ENOENT: file vanished between stat and open"));
+          },
+        });
+      }
+      return actual.createReadStream(file as Parameters<typeof actual.createReadStream>[0]);
+    }) as typeof actual.createReadStream,
+  };
+});
+
+const { createStaticHandler } = await import("../src/server.js");
+
+describe("createStaticHandler stream errors", () => {
+  let root: string;
+  beforeEach(async () => {
+    root = await mkdtemp(path.join(tmpdir(), "static-docs-stream-"));
+    await mkdir(root, { recursive: true });
+    await writeFile(path.join(root, "index.html"), "<html><body>home</body></html>");
+    await writeFile(path.join(root, "vanished.txt"), "still visible to stat");
+  });
+  afterEach(async () => {
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it("destroys the response instead of crashing and keeps serving", async () => {
+    const server = http.createServer(createStaticHandler({ root }));
+    await new Promise<void>((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const base = `http://127.0.0.1:${port}`;
+    try {
+      // The response is aborted mid-flight; the client sees a network failure.
+      await expect(fetch(`${base}/vanished.txt`)).rejects.toThrow();
+      // The server must survive and keep serving other files.
+      const res = await fetch(`${base}/`);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain("home");
+    } finally {
+      await new Promise((resolveClose) => server.close(resolveClose));
+    }
+  });
+});
+```
+
+### tests/server.test.ts
+
+```typescript
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import http from "node:http";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createStaticHandler, type StaticHandlerOptions } from "../src/server.js";
+
+async function withServer(
+  options: StaticHandlerOptions,
+  fn: (base: string) => Promise<void>,
+): Promise<void> {
+  const server = http.createServer(createStaticHandler(options));
+  await new Promise<void>((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : 0;
+  try {
+    await fn(`http://127.0.0.1:${port}`);
+  } finally {
+    await new Promise((resolveClose) => server.close(resolveClose));
+  }
+}
+
+describe("createStaticHandler", () => {
+  let root: string;
+  beforeEach(async () => {
+    root = await mkdtemp(path.join(tmpdir(), "static-docs-server-"));
+    await mkdir(path.join(root, "sub"), { recursive: true });
+    await writeFile(path.join(root, "index.html"), "<html><body>home</body></html>");
+    await writeFile(path.join(root, "sub", "index.html"), "<html><body>sub</body></html>");
+    await writeFile(path.join(root, "data.json"), '{"ok":true}');
+  });
+  afterEach(async () => {
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it("serves index.html for the root directory", async () => {
+    await withServer({ root }, async (base) => {
+      const res = await fetch(`${base}/`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("text/html; charset=utf-8");
+      expect(await res.text()).toContain("home");
+    });
+  });
+
+  it("answers 403 without file contents for encoded path traversal", async () => {
+    await withServer({ root }, async (base) => {
+      const res = await fetch(`${base}/%2e%2e%2f%2e%2e%2fetc%2fpasswd`);
+      expect(res.status).toBe(403);
+      const body = await res.text();
+      expect(body).not.toContain("root:");
+    });
+  });
+
+  it("answers 403 for traversal mixing plain and encoded segments", async () => {
+    await withServer({ root }, async (base) => {
+      const res = await fetch(`${base}/sub/..%2f..%2fetc%2fpasswd`);
+      expect(res.status).toBe(403);
+    });
+  });
+
+  it("answers 400 for malformed percent-encoding and keeps serving", async () => {
+    await withServer({ root }, async (base) => {
+      const bad = await fetch(`${base}/%`);
+      expect(bad.status).toBe(400);
+      // The server must survive the malformed request.
+      const good = await fetch(`${base}/`);
+      expect(good.status).toBe(200);
+    });
+  });
+
+  it("redirects directory URLs without a trailing slash", async () => {
+    await withServer({ root }, async (base) => {
+      const res = await fetch(`${base}/sub`, { redirect: "manual" });
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toBe("/sub/");
+      const followed = await fetch(`${base}/sub/`);
+      expect(followed.status).toBe(200);
+      expect(await followed.text()).toContain("sub");
+    });
+  });
+
+  it("redirects the root-less basePath itself", async () => {
+    await withServer({ root, basePath: "/docs" }, async (base) => {
+      const res = await fetch(`${base}/docs`, { redirect: "manual" });
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toBe("/docs/");
+    });
+  });
+
+  it("strips basePath before resolving and keeps it in redirects", async () => {
+    await withServer({ root, basePath: "/docs" }, async (base) => {
+      const page = await fetch(`${base}/docs/data.json`);
+      expect(page.status).toBe(200);
+      expect(await page.json()).toEqual({ ok: true });
+      const redirect = await fetch(`${base}/docs/sub`, { redirect: "manual" });
+      expect(redirect.status).toBe(302);
+      expect(redirect.headers.get("location")).toBe("/docs/sub/");
+    });
+  });
+
+  it("answers 404 for missing files", async () => {
+    await withServer({ root }, async (base) => {
+      const res = await fetch(`${base}/nope.png`);
+      expect(res.status).toBe(404);
+    });
+  });
+
+  it("serves a full MIME map", async () => {
+    await withServer({ root }, async (base) => {
+      const res = await fetch(`${base}/data.json`);
+      expect(res.headers.get("content-type")).toBe("application/json; charset=utf-8");
+    });
+  });
+
+  it("applies transformHtml to HTML but not to other files", async () => {
+    await withServer(
+      { root, transformHtml: (html) => html.replace("</body>", "<!--x--></body>") },
+      async (base) => {
+        const html = await (await fetch(`${base}/`)).text();
+        expect(html).toContain("<!--x-->");
+        const json = await (await fetch(`${base}/data.json`)).text();
+        expect(json).not.toContain("<!--x-->");
+      },
+    );
+  });
+
+  it("answers HEAD with the same status and headers but no body", async () => {
+    await withServer({ root }, async (base) => {
+      const res = await fetch(`${base}/`, { method: "HEAD" });
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("text/html; charset=utf-8");
+      expect(await res.text()).toBe("");
+
+      const json = await fetch(`${base}/data.json`, { method: "HEAD" });
+      expect(json.status).toBe(200);
+      expect(json.headers.get("content-type")).toBe("application/json; charset=utf-8");
+      expect(await json.text()).toBe("");
+    });
+  });
+
+  it("answers HEAD for error statuses without a body", async () => {
+    await withServer({ root }, async (base) => {
+      const res = await fetch(`${base}/nope.png`, { method: "HEAD" });
+      expect(res.status).toBe(404);
+      expect(await res.text()).toBe("");
+    });
+  });
+
+  it("answers 405 with Allow for non-GET/HEAD methods", async () => {
+    await withServer({ root }, async (base) => {
+      const res = await fetch(`${base}/`, { method: "POST" });
+      expect(res.status).toBe(405);
+      expect(res.headers.get("allow")).toBe("GET, HEAD");
+      // The server must survive the rejected method.
+      const good = await fetch(`${base}/`);
+      expect(good.status).toBe(200);
+    });
+  });
+});
+```
+
 ### tsconfig.json
 
 ```json
@@ -3814,7 +5366,7 @@ const pkg = createRequire(import.meta.url)("./package.json") as {
 };
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/cli.ts"],
+  entry: ["src/index.ts", "src/cli.ts", "src/playwright/index.ts", "src/playwright/reporter.ts"],
   format: ["esm"],
   target: "node18",
   dts: false,
@@ -3829,9 +5381,9 @@ export default defineConfig({
 
 ## Stats
 
-- Files listed: 50
-- Files embedded: 49 (106.4 KB)
+- Files listed: 59
+- Files embedded: 58 (157.6 KB)
 - Skipped (binary): 0
 - Skipped (over --max-bytes): 1
 - Skipped (over --max-total-bytes budget): 0
-- Generated in: 35ms
+- Generated in: 37ms
