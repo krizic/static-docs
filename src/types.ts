@@ -46,10 +46,15 @@ export interface NavNode {
   children: NavNode[];
 }
 
+export interface AssetRef {
+  source: string; // absolute source path
+  dest: string; // posix path relative to the output dir, e.g. "assets/media/img/a.png"
+}
+
 export interface ParsedMarkdown {
   html: string;
   toc: TocEntry[];
   frontmatter: Frontmatter;
-  assets: string[]; // relative asset paths referenced in the md
+  assets: AssetRef[]; // local assets referenced in the md
   hasMermaid: boolean; // true if the page contains a mermaid diagram
 }

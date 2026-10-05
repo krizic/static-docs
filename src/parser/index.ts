@@ -11,7 +11,7 @@ import remarkRehype from "remark-rehype";
 import remarkSmartypants from "remark-smartypants";
 import { unified } from "unified";
 import type { ResolvedConfig } from "../config.js";
-import type { FileNode, ParsedMarkdown, TocEntry } from "../types.js";
+import type { AssetRef, FileNode, ParsedMarkdown, TocEntry } from "../types.js";
 import { rehypeRewriteLinks } from "./links.js";
 import { type MermaidState, rehypeMermaid } from "./mermaid.js";
 import { extractMeta } from "./meta.js";
@@ -30,7 +30,7 @@ export async function parseMarkdown(
   const { data: frontmatter } = extractMeta(raw);
 
   const tocFlat: TocEntry[] = [];
-  const assets: string[] = [];
+  const assets: AssetRef[] = [];
   const mermaidState: MermaidState = { found: false };
   const currentRelDir = path.posix.dirname(file.relativePath);
 
@@ -58,6 +58,9 @@ export async function parseMarkdown(
     .use(rehypeRewriteLinks, {
       currentRelDir: currentRelDir === "." ? "" : currentRelDir,
       basePath: config.basePath,
+      sourceDirAbs: path.dirname(file.sourcePath),
+      rootDirAbs: config.rootDir,
+      sourceLabel: file.relativePath,
       assets,
     })
     .use(rehypeStringify, { allowDangerousHtml: true });

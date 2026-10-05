@@ -9,23 +9,22 @@ import { outFileFor } from "./utils/path.js";
 
 const require = createRequire(import.meta.url);
 
-/** Copy assets referenced by each page next to its emitted index.html. */
+/**
+ * Copy media referenced from markdown (images, video, PDFs, …) into
+ * `<output>/assets/media/`, mirroring their location relative to the project
+ * root. The parser has already rewritten the HTML to point at these paths.
+ */
 export async function copyAssets(
   items: { file: FileNode; parsed: ParsedMarkdown }[],
   config: ResolvedConfig,
 ): Promise<void> {
-  for (const { file, parsed } of items) {
-    const srcDir = path.dirname(file.sourcePath);
-    const outDir = path.dirname(path.join(config.outputDirAbs, outFileFor(file.routePath)));
-    for (const rel of parsed.assets) {
-      const [clean] = rel.split(/[?#]/);
-      const srcAbs = path.resolve(srcDir, clean);
-      if (!(await exists(srcAbs))) {
-        console.warn(`[static-docs] missing asset: ${clean} (from ${file.relativePath})`);
-        continue;
-      }
-      const destAbs = path.resolve(outDir, clean);
-      await copyFileEnsured(srcAbs, destAbs);
+  const copied = new Set<string>();
+  for (const { parsed } of items) {
+    for (const { source, dest } of parsed.assets) {
+      if (copied.has(dest)) continue;
+      copied.add(dest);
+      if (!(await exists(source))) continue;
+      await copyFileEnsured(source, path.join(config.outputDirAbs, dest));
     }
   }
 }

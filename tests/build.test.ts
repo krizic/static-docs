@@ -83,3 +83,50 @@ describe("build with evidenceGalleries", () => {
     );
   });
 });
+
+describe("build with markdown images", () => {
+  let dir: string;
+  beforeEach(async () => {
+    dir = await mkdtemp(path.join(tmpdir(), "build-img-"));
+    await mkdir(path.join(dir, "docs", "guides"), { recursive: true });
+    await mkdir(path.join(dir, "docs", "images"), { recursive: true });
+    await writeFile(path.join(dir, "docs", "images", "my shot.png"), PNG);
+    await writeFile(path.join(dir, "docs", "guides", "local.png"), PNG);
+    await writeFile(
+      path.join(dir, "docs", "guides", "setup.md"),
+      [
+        "# Setup",
+        "",
+        "![a](../images/my%20shot.png)",
+        "![b](./local.png#frag)",
+        "![ext](https://example.com/x.png)",
+        "![gone](./missing.png)",
+        '<img src="./local.png" width="10">',
+      ].join("\n"),
+    );
+    await writeFile(
+      path.join(dir, "static-docs.config.json"),
+      JSON.stringify({ outputDir: "./out", basePath: "/base/" }),
+    );
+  });
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it("copies referenced images into assets/media and rewrites src", async () => {
+    const { config } = await build(path.join(dir, "static-docs.config.json"));
+    const out = config.outputDirAbs;
+    const html = await readFile(path.join(out, "docs", "guides", "setup", "index.html"), "utf8");
+    expect(html).toContain('src="/base/assets/media/docs/images/my%20shot.png"');
+    expect(html).toContain('src="/base/assets/media/docs/guides/local.png#frag"');
+    expect(html).toContain('<img src="/base/assets/media/docs/guides/local.png" width="10">');
+    expect(html).toContain('src="https://example.com/x.png"');
+    expect(html).toContain('src="./missing.png"');
+    expect(await exists(path.join(out, "assets", "media", "docs", "images", "my shot.png"))).toBe(
+      true,
+    );
+    expect(await exists(path.join(out, "assets", "media", "docs", "guides", "local.png"))).toBe(
+      true,
+    );
+  });
+});
