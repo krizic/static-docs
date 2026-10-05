@@ -1,10 +1,10 @@
 # Repository Context: @krizic/static-docs
 
-_Generated: 2026-09-28T14:22:07.729Z_
+_Generated: 2026-10-05T23:31:25.597Z_
 
 ## Overview
 
-- **@krizic/static-docs** (package.json) — v0.2.0
+- **@krizic/static-docs** (package.json) — v0.2.1
   - Turn Markdown into a static documentation site.
   - scripts: build, dev, typecheck, test, check, check:fix, schema, docs, llm, prepare, prepublishOnly
 
@@ -741,7 +741,7 @@ pre-commit:
 ```json
 {
   "name": "@krizic/static-docs",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Turn Markdown into a static documentation site.",
   "type": "module",
   "license": "MIT",
@@ -1401,23 +1401,22 @@ import { outFileFor } from "./utils/path.js";
 
 const require = createRequire(import.meta.url);
 
-/** Copy assets referenced by each page next to its emitted index.html. */
+/**
+ * Copy media referenced from markdown (images, video, PDFs, …) into
+ * `<output>/assets/media/`, mirroring their location relative to the project
+ * root. The parser has already rewritten the HTML to point at these paths.
+ */
 export async function copyAssets(
   items: { file: FileNode; parsed: ParsedMarkdown }[],
   config: ResolvedConfig,
 ): Promise<void> {
-  for (const { file, parsed } of items) {
-    const srcDir = path.dirname(file.sourcePath);
-    const outDir = path.dirname(path.join(config.outputDirAbs, outFileFor(file.routePath)));
-    for (const rel of parsed.assets) {
-      const [clean] = rel.split(/[?#]/);
-      const srcAbs = path.resolve(srcDir, clean);
-      if (!(await exists(srcAbs))) {
-        console.warn(`[static-docs] missing asset: ${clean} (from ${file.relativePath})`);
-        continue;
-      }
-      const destAbs = path.resolve(outDir, clean);
-      await copyFileEnsured(srcAbs, destAbs);
+  const copied = new Set<string>();
+  for (const { parsed } of items) {
+    for (const { source, dest } of parsed.assets) {
+      if (copied.has(dest)) continue;
+      copied.add(dest);
+      if (!(await exists(source))) continue;
+      await copyFileEnsured(source, path.join(config.outputDirAbs, dest));
     }
   }
 }
@@ -2474,7 +2473,7 @@ import remarkRehype from "remark-rehype";
 import remarkSmartypants from "remark-smartypants";
 import { unified } from "unified";
 import type { ResolvedConfig } from "../config.js";
-import type { FileNode, ParsedMarkdown, TocEntry } from "../types.js";
+import type { AssetRef, FileNode, ParsedMarkdown, TocEntry } from "../types.js";
 import { rehypeRewriteLinks } from "./links.js";
 import { type MermaidState, rehypeMermaid } from "./mermaid.js";
 import { extractMeta } from "./meta.js";
@@ -2493,7 +2492,7 @@ export async function parseMarkdown(
   const { data: frontmatter } = extractMeta(raw);
 
   const tocFlat: TocEntry[] = [];
-  const assets: string[] = [];
+  const assets: AssetRef[] = [];
   const mermaidState: MermaidState = { found: false };
   const currentRelDir = path.posix.dirname(file.relativePath);
 
@@ -2521,6 +2520,9 @@ export async function parseMarkdown(
     .use(rehypeRewriteLinks, {
       currentRelDir: currentRelDir === "." ? "" : currentRelDir,
       basePath: config.basePath,
+      sourceDirAbs: path.dirname(file.sourcePath),
+      rootDirAbs: config.rootDir,
+      sourceLabel: file.relativePath,
       assets,
     })
     .use(rehypeStringify, { allowDangerousHtml: true });
@@ -2539,34 +2541,114 @@ export async function parseMarkdown(
 ### src/parser/links.ts
 
 ```typescript
+import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
-import { resolveInternalLink } from "../utils/path.js";
+import type { AssetRef } from "../types.js";
+import { resolveInternalLink, withBase } from "../utils/path.js";
 
 export interface LinkOptions {
   currentRelDir: string; // posix dir of the current md file, relative to root
   basePath: string;
-  assets: string[]; // collect referenced local asset paths
+  /** Absolute dir of the current md file; enables asset rewriting when set. */
+  sourceDirAbs?: string;
+  /** Absolute project root; assets inside it keep their relative layout. */
+  rootDirAbs?: string;
+  /** Source label used in warnings. */
+  sourceLabel?: string;
+  assets: AssetRef[]; // collect referenced local assets
 }
 
-const EXTERNAL = /^([a-z]+:)?\/\//i;
-const ASSET_EXT = /\.(png|jpe?g|gif|svg|webp|avif|ico|pdf|mp4|webm)$/i;
+const EXTERNAL = /^([a-z][a-z0-9+.-]*:)?\/\//i;
+const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+const ASSET_EXT = /\.(png|jpe?g|gif|svg|webp|avif|ico|bmp|pdf|mp4|webm|ogg|mp3|wav)$/i;
+
+/** Output dir (relative to the build root) where referenced media is emitted. */
+export const MEDIA_DIR = "assets/media";
+
+function isLocal(url: string): boolean {
+  return !EXTERNAL.test(url) && !SCHEME.test(url) && !url.startsWith("#") && !url.startsWith("/");
+}
+
+/**
+ * Resolve a local asset reference to its absolute source path and the
+ * output-relative destination it will be copied to. Returns undefined for
+ * non-local URLs or when the source file does not exist.
+ */
+function planAsset(url: string, options: LinkOptions): { ref: AssetRef; url: string } | undefined {
+  if (!options.sourceDirAbs || !isLocal(url)) return undefined;
+  const match = /^([^?#]*)([?#].*)?$/.exec(url);
+  const pathPart = match?.[1] ?? url;
+  const suffix = match?.[2] ?? "";
+  if (!ASSET_EXT.test(pathPart)) return undefined;
+  let decoded = pathPart;
+  try {
+    decoded = decodeURI(pathPart);
+  } catch {
+    // keep raw
+  }
+  const source = path.resolve(options.sourceDirAbs, decoded);
+  if (!existsSync(source)) {
+    console.warn(
+      `[static-docs] missing asset: ${pathPart}${options.sourceLabel ? ` (from ${options.sourceLabel})` : ""}`,
+    );
+    return undefined;
+  }
+  const root = options.rootDirAbs ?? options.sourceDirAbs;
+  const rel = path.relative(root, source);
+  let dest: string;
+  if (rel && !rel.startsWith("..") && !path.isAbsolute(rel)) {
+    dest = `${MEDIA_DIR}/${rel.split(path.sep).join("/")}`;
+  } else {
+    const hash = createHash("sha1").update(source).digest("hex").slice(0, 8);
+    dest = `${MEDIA_DIR}/_external/${hash}/${path.basename(source)}`;
+  }
+  options.assets.push({ source, dest });
+  return { ref: { source, dest }, url: encodeURI(withBase(dest, options.basePath)) + suffix };
+}
+
+function rewriteProp(node: Element, prop: string, options: LinkOptions): void {
+  const value = node.properties?.[prop];
+  if (typeof value !== "string") return;
+  const planned = planAsset(value, options);
+  if (planned && node.properties) node.properties[prop] = planned.url;
+}
+
+const RAW_ATTR =
+  /(<(?:img|source|video|audio|a)\b[^>]*?\s(?:src|href|poster)\s*=\s*)(["'])(.*?)\2/gi;
 
 export function rehypeRewriteLinks(options: LinkOptions) {
   return (tree: Root) => {
-    visit(tree, "element", (node: Element) => {
-      if (node.tagName === "a") {
-        const href = node.properties?.href;
+    visit(tree, (node) => {
+      if (node.type === "raw") {
+        // Inline HTML in markdown, e.g. <img src="./diagram.png" width="300">
+        node.value = node.value.replace(
+          RAW_ATTR,
+          (all: string, pre: string, q: string, url: string) => {
+            const planned = planAsset(url, options);
+            return planned ? `${pre}${q}${planned.url}${q}` : all;
+          },
+        );
+        return;
+      }
+      if (node.type !== "element") return;
+      const el = node as Element;
+      if (el.tagName === "a") {
+        const href = el.properties?.href;
         if (typeof href !== "string") return;
         if (EXTERNAL.test(href) || href.startsWith("#") || href.startsWith("mailto:")) return;
-        if (/\.md(#.*)?$/i.test(href) && node.properties) {
-          node.properties.href = resolveInternalLink(href, options.currentRelDir, options.basePath);
+        if (/\.md(#.*)?$/i.test(href) && el.properties) {
+          el.properties.href = resolveInternalLink(href, options.currentRelDir, options.basePath);
+          return;
         }
-      } else if (node.tagName === "img") {
-        const src = node.properties?.src;
-        if (typeof src === "string" && !EXTERNAL.test(src) && ASSET_EXT.test(src)) {
-          options.assets.push(src);
-        }
+        rewriteProp(el, "href", options);
+      } else if (el.tagName === "img" || el.tagName === "source") {
+        rewriteProp(el, "src", options);
+      } else if (el.tagName === "video" || el.tagName === "audio") {
+        rewriteProp(el, "src", options);
+        rewriteProp(el, "poster", options);
       }
     });
   };
@@ -4227,11 +4309,16 @@ export interface NavNode {
   children: NavNode[];
 }
 
+export interface AssetRef {
+  source: string; // absolute source path
+  dest: string; // posix path relative to the output dir, e.g. "assets/media/img/a.png"
+}
+
 export interface ParsedMarkdown {
   html: string;
   toc: TocEntry[];
   frontmatter: Frontmatter;
-  assets: string[]; // relative asset paths referenced in the md
+  assets: AssetRef[]; // local assets referenced in the md
   hasMermaid: boolean; // true if the page contains a mermaid diagram
 }
 ```
@@ -4405,6 +4492,53 @@ describe("build with evidenceGalleries", () => {
     // missing image: warned but not copied, build succeeded
     expect(await exists(path.join(config.outputDirAbs, "e2e-evidence", "does-not-exist.png"))).toBe(
       false,
+    );
+  });
+});
+
+describe("build with markdown images", () => {
+  let dir: string;
+  beforeEach(async () => {
+    dir = await mkdtemp(path.join(tmpdir(), "build-img-"));
+    await mkdir(path.join(dir, "docs", "guides"), { recursive: true });
+    await mkdir(path.join(dir, "docs", "images"), { recursive: true });
+    await writeFile(path.join(dir, "docs", "images", "my shot.png"), PNG);
+    await writeFile(path.join(dir, "docs", "guides", "local.png"), PNG);
+    await writeFile(
+      path.join(dir, "docs", "guides", "setup.md"),
+      [
+        "# Setup",
+        "",
+        "![a](../images/my%20shot.png)",
+        "![b](./local.png#frag)",
+        "![ext](https://example.com/x.png)",
+        "![gone](./missing.png)",
+        '<img src="./local.png" width="10">',
+      ].join("\n"),
+    );
+    await writeFile(
+      path.join(dir, "static-docs.config.json"),
+      JSON.stringify({ outputDir: "./out", basePath: "/base/" }),
+    );
+  });
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it("copies referenced images into assets/media and rewrites src", async () => {
+    const { config } = await build(path.join(dir, "static-docs.config.json"));
+    const out = config.outputDirAbs;
+    const html = await readFile(path.join(out, "docs", "guides", "setup", "index.html"), "utf8");
+    expect(html).toContain('src="/base/assets/media/docs/images/my%20shot.png"');
+    expect(html).toContain('src="/base/assets/media/docs/guides/local.png#frag"');
+    expect(html).toContain('<img src="/base/assets/media/docs/guides/local.png" width="10">');
+    expect(html).toContain('src="https://example.com/x.png"');
+    expect(html).toContain('src="./missing.png"');
+    expect(await exists(path.join(out, "assets", "media", "docs", "images", "my shot.png"))).toBe(
+      true,
+    );
+    expect(await exists(path.join(out, "assets", "media", "docs", "guides", "local.png"))).toBe(
+      true,
     );
   });
 });
@@ -5382,8 +5516,8 @@ export default defineConfig({
 ## Stats
 
 - Files listed: 59
-- Files embedded: 58 (157.6 KB)
+- Files embedded: 58 (162.8 KB)
 - Skipped (binary): 0
 - Skipped (over --max-bytes): 1
 - Skipped (over --max-total-bytes budget): 0
-- Generated in: 37ms
+- Generated in: 38ms
